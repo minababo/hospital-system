@@ -54,3 +54,34 @@ python -m pytest                                    # run the test suite
 ruff check . && ruff format --check .               # lint and format check
 python manage.py makemigrations --check --dry-run   # confirm no missing migrations
 ```
+
+## Deployment (Render + Supabase)
+
+The app runs as a Render web service backed by a Supabase PostgreSQL database.
+
+| Render setting    | Value                                                     |
+|-------------------|-----------------------------------------------------------|
+| Build command     | `bash build.sh`                                           |
+| Start command     | `gunicorn config.wsgi:application --bind 0.0.0.0:$PORT`   |
+| Health check path | `/healthz/`                                               |
+
+Environment variables set on Render:
+
+| Name              | Purpose                                                                 |
+|-------------------|-------------------------------------------------------------------------|
+| `SECRET_KEY`      | Django secret key (long random value, unique to production)             |
+| `DEBUG`           | Must be `False`                                                         |
+| `DATABASE_URL`    | Supabase session pooler connection string, ending in `?sslmode=require` |
+| `WEB_CONCURRENCY` | Number of gunicorn worker processes                                     |
+| `LOG_LEVEL`       | Logging level (e.g. `INFO`)                                             |
+
+Render sets `RENDER_EXTERNAL_HOSTNAME` and `PORT` itself. The hostname is added to
+`ALLOWED_HOSTS` and `CSRF_TRUSTED_ORIGINS` automatically.
+
+Notes:
+
+- The Python version comes from `.python-version`.
+- `build.sh` runs `check --deploy`, `collectstatic` and `migrate`, so migrations are applied on
+  every deploy.
+- To create admin users, run `python manage.py createsuperuser` on your own machine with
+  `DATABASE_URL` set to the production database.
