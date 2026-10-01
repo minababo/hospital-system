@@ -2,6 +2,10 @@
 DJANGO_SETTINGS_MODULE = "config.settings"
 python_files = ["test_*.py"]
 addopts = "-ra --strict-markers"
+filterwarnings = [
+    # WhiteNoise warns when staticfiles/ is missing; it only exists after collectstatic.
+    "ignore:No directory at:UserWarning",
+]
 
 [tool.ruff]
 target-version = "py314"

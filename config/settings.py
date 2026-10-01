@@ -15,6 +15,15 @@ DEBUG = env.bool("DEBUG", default=False)
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
 
+# Set automatically by Render, e.g. hms.onrender.com
+RENDER_EXTERNAL_HOSTNAME = env("RENDER_EXTERNAL_HOSTNAME", default="")
+if RENDER_EXTERNAL_HOSTNAME:
+    if RENDER_EXTERNAL_HOSTNAME not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+    render_origin = f"https://{RENDER_EXTERNAL_HOSTNAME}"
+    if render_origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(render_origin)
+
 # Applications
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -56,7 +65,8 @@ TEMPLATES = [
     },
 ]
 
-# Database (SQLite fallback is for local dev only)
+# Database (SQLite fallback is for local dev only).
+# Query params in DATABASE_URL such as ?sslmode=require end up in OPTIONS.
 DATABASES = {
     "default": env.db("DATABASE_URL", default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}"),
 }
@@ -95,10 +105,18 @@ STORAGES = {
     },
 }
 
-# Email
+# Email. The MVP sends no email (notifications are a "future enhancement" in the spec);
+# SMTP host/credentials get added only if a feature needs email.
 MAILERS = {
     "default": {
-        "BACKEND": "django.core.mail.backends.console.EmailBackend",
+        "BACKEND": env(
+            "MAILER_BACKEND",
+            default=(
+                "django.core.mail.backends.console.EmailBackend"
+                if DEBUG
+                else "django.core.mail.backends.smtp.EmailBackend"
+            ),
+        ),
     },
 }
 
@@ -112,6 +130,15 @@ if not DEBUG:
     # Render already redirects HTTP to HTTPS.
     SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=False)
     SECURE_CONTENT_TYPE_NOSNIFF = True
+
+SILENCED_SYSTEM_CHECKS = [
+    # No HSTS includeSubDomains: we don't own the onrender.com domain.
+    "security.W005",
+    # No HSTS preload, for the same reason.
+    "security.W021",
+    # SECURE_SSL_REDIRECT is off: Render's edge redirects HTTP to HTTPS first.
+    "security.W008",
+]
 
 # Logging (console, so output shows up in Render logs)
 LOGGING = {
