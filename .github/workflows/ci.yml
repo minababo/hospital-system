@@ -33,7 +33,7 @@ jobs:
           - 5432:5432
 
     env:
-      SECRET_KEY: ci-only-insecure-secret-key-not-for-production
+      SECRET_KEY: ci-only-not-a-real-secret-key-0123456789-abcdefghijklmnop
       DEBUG: "False"
       DATABASE_URL: postgres://postgres:postgres@localhost:5432/hms_test
 
@@ -57,8 +57,8 @@ jobs:
       - name: Check for missing migrations
         run: python manage.py makemigrations --check --dry-run
 
-      - name: Django system check
-        run: python manage.py check
+      - name: Django deployment checks
+        run: python manage.py check --deploy --fail-level WARNING
 
       - name: Run tests
         run: python -m pytest
