@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+# Django
+db.sqlite3
+staticfiles/
+media/
+# Secrets / env
+.env
+.env.*
+!.env.example
+# Tools
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.claude/settings.local.json
+# Editors / OS
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
