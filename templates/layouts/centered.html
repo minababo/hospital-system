@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block body %}
+  <main class="mx-auto flex min-h-screen max-w-md flex-col justify-center px-4 py-10">
+    <p class="mb-6 text-center text-lg font-semibold tracking-tight text-slate-900">HMS</p>
+    {% include "partials/messages.html" %}
+    <section class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+      {% block content %}{% endblock %}
+    </section>
+  </main>
+{% endblock %}

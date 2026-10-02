@@ -1,0 +1,13 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}Pharmacist Dashboard{% endblock %}
+
+{% block content %}
+  <h1 class="text-2xl font-semibold text-slate-900">Pharmacist Dashboard</h1>
+  <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    {% include "reports/partials/stat_card.html" with label="Pending prescriptions" %}
+    {% include "reports/partials/stat_card.html" with label="Low-stock medicines" %}
+    {% include "reports/partials/stat_card.html" with label="Expiring soon" %}
+    {% include "reports/partials/stat_card.html" with label="Dispensed today" %}
+  </div>
+{% endblock %}
