@@ -1,10 +1,12 @@
 import itertools
 import runpy
+from decimal import Decimal
 
 import pytest
 from django.conf import settings as django_settings
 
 from accounts.models import Role, User
+from doctors.models import Department, Doctor
 
 
 @pytest.fixture(autouse=True)
@@ -42,7 +44,7 @@ def user_password():
 def make_user(db, user_password):
     counter = itertools.count(1)
 
-    def _make_user(role=Role.DOCTOR, password=None, **kwargs):
+    def _make_user(role=Role.RECEPTIONIST, password=None, **kwargs):
         n = next(counter)
         username = kwargs.pop("username", f"{role.lower()}{n}")
         kwargs.setdefault("first_name", "Test")
@@ -53,6 +55,42 @@ def make_user(db, user_password):
         )
 
     return _make_user
+
+
+@pytest.fixture
+def make_department(db):
+    counter = itertools.count(1)
+
+    def _make_department(**kwargs):
+        kwargs.setdefault("name", f"Department {next(counter)}")
+        return Department.objects.create(**kwargs)
+
+    return _make_department
+
+
+@pytest.fixture
+def make_doctor(make_user, make_department):
+    """Creates a DOCTOR user plus their Doctor profile. User fields can be passed
+    with a user__ prefix, e.g. make_doctor(user__first_name="Ana")."""
+    counter = itertools.count(1)
+
+    def _make_doctor(**kwargs):
+        n = next(counter)
+        user_kwargs = {
+            k.removeprefix("user__"): kwargs.pop(k) for k in list(kwargs) if k.startswith("user__")
+        }
+        # Not setdefault(): that would create a user/department even when one is passed.
+        if "user" not in kwargs:
+            kwargs["user"] = make_user(role=Role.DOCTOR, **user_kwargs)
+        if "department" not in kwargs:
+            kwargs["department"] = make_department()
+        kwargs.setdefault("specialization", "General Medicine")
+        kwargs.setdefault("registration_number", f"SLMC{n:05d}")
+        kwargs.setdefault("phone", "0771234567")
+        kwargs.setdefault("consultation_fee", Decimal("1500.00"))
+        return Doctor.objects.create(**kwargs)
+
+    return _make_doctor
 
 
 @pytest.fixture
