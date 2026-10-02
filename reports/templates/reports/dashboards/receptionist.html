@@ -3,7 +3,10 @@
 {% block title %}Receptionist Dashboard{% endblock %}
 
 {% block content %}
-  <h1 class="text-2xl font-semibold text-slate-900">Receptionist Dashboard</h1>
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-2xl font-semibold text-slate-900">Receptionist Dashboard</h1>
+    <a href="{% url 'patients:patient_create' %}" class="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Register patient</a>
+  </div>
   <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
     {% include "reports/partials/stat_card.html" with label="Today's appointments" %}
     {% include "reports/partials/stat_card.html" with label="Patients registered today" %}

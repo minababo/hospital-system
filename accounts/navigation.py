@@ -6,10 +6,12 @@ from accounts.models import Role
 DASHBOARD = ("Dashboard", "dashboard")
 CHANGE_PASSWORD = ("Change password", "accounts:password_change")
 DOCTORS = ("Doctors", "doctors:doctor_list")
+PATIENTS = ("Patients", "patients:patient_list")
 
 NAV_ITEMS = {
     Role.ADMIN: [
         DASHBOARD,
+        PATIENTS,
         ("Users", "accounts:user_list"),
         ("Departments", "doctors:department_list"),
         DOCTORS,
@@ -17,16 +19,19 @@ NAV_ITEMS = {
     ],
     Role.DOCTOR: [
         DASHBOARD,
+        PATIENTS,
         ("My profile", "doctors:me"),
         CHANGE_PASSWORD,
     ],
     Role.NURSE: [
         DASHBOARD,
+        PATIENTS,
         DOCTORS,
         CHANGE_PASSWORD,
     ],
     Role.RECEPTIONIST: [
         DASHBOARD,
+        PATIENTS,
         DOCTORS,
         CHANGE_PASSWORD,
     ],

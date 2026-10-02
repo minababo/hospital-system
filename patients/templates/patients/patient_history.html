@@ -1,0 +1,26 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}Medical history{% endblock %}
+
+{% block content %}
+  <a href="{% url 'patients:patient_detail' patient.pk %}" class="text-sm text-slate-600 hover:text-slate-900">&larr; Back to {{ patient.full_name }}</a>
+  <h1 class="mt-2 text-2xl font-semibold text-slate-900">Medical history</h1>
+  <p class="text-sm text-slate-500">{{ patient }}</p>
+
+  <ol class="mt-6 space-y-3">
+    {% for event in events %}
+      <li class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">{{ event.kind }}</span>
+          <time class="text-xs text-slate-500">{{ event.timestamp|date:"d M Y H:i" }}</time>
+        </div>
+        <p class="mt-2 font-medium text-slate-900">
+          {% if event.url %}<a href="{{ event.url }}" class="hover:underline">{{ event.title }}</a>{% else %}{{ event.title }}{% endif %}
+        </p>
+        {% if event.detail %}<p class="mt-1 text-sm text-slate-600">{{ event.detail }}</p>{% endif %}
+      </li>
+    {% empty %}
+      <li class="rounded-lg border border-slate-200 bg-white p-6 text-center text-slate-500">No history yet.</li>
+    {% endfor %}
+  </ol>
+{% endblock %}
