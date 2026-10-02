@@ -77,6 +77,7 @@ closes.
 | Module | URL | Who can use it |
 |--------|-----|----------------|
 | Users | `/accounts/users/` | Admin |
+| Patients | `/patients/` | View, search, upload documents: Admin, Receptionist, Doctor, Nurse. Register/edit: Admin, Receptionist. Medical history: Admin, Doctor, Nurse. Delete documents: Admin |
 | Departments | `/doctors/departments/` | Admin (create, edit, activate/deactivate) |
 | Doctors | `/doctors/` | View: Admin, Receptionist, Nurse, Doctor. Add/edit doctors and schedules: Admin |
 | My profile | `/doctors/me/` | Doctor (own profile and weekly schedule) |
@@ -84,6 +85,25 @@ closes.
 Doctors are added under **Doctors**, not **Users**: adding a doctor creates their login account
 and doctor profile together. A doctor's weekly schedule is made of blocks (e.g. Monday 09:00–12:00
 in 15-minute slots) that cannot overlap.
+
+Patients get a medical record number (MRN) such as `P000123`. Search accepts a name
+("kamal perera"), MRN, NIC or phone number in any common format.
+
+## File storage
+
+Patient documents (PDF, JPG, PNG up to `MAX_UPLOAD_MB`) are stored in a **private** Supabase
+Storage bucket through its S3-compatible API.
+
+- Files are never linked directly. They are downloaded through `/patients/<id>/documents/<doc>/`,
+  which checks the user's role first and streams the file.
+- Each file's type is checked from its actual bytes, not its name. Files are stored under a
+  random name (`patients/<patient id>/<random>.pdf`); the original name is only kept in the
+  database.
+- Configuration: `SUPABASE_S3_ENDPOINT`, `SUPABASE_S3_REGION`, `SUPABASE_S3_BUCKET`,
+  `SUPABASE_S3_ACCESS_KEY_ID`, `SUPABASE_S3_SECRET_ACCESS_KEY` (all five, or none).
+- With none set locally, files are saved to `./media` instead.
+- On Render (`RENDER=true`), the app refuses to start without Supabase Storage, because Render's
+  disk is wiped on every deploy.
 
 ## Deployment (Render + Supabase)
 
@@ -105,6 +125,8 @@ Environment variables set on Render:
 | `WEB_CONCURRENCY` | Number of gunicorn worker processes                                     |
 | `LOG_LEVEL`       | Logging level (e.g. `INFO`)                                             |
 | `SESSION_IDLE_TIMEOUT_MINUTES` | Minutes of inactivity before a user is logged out (default 30) |
+| `SUPABASE_S3_*` (5 variables) | Supabase Storage connection for uploaded documents (see File storage) |
+| `MAX_UPLOAD_MB` | Largest upload allowed in MB (default 5) |
 
 Render sets `RENDER_EXTERNAL_HOSTNAME` and `PORT` itself. The hostname is added to
 `ALLOWED_HOSTS` and `CSRF_TRUSTED_ORIGINS` automatically.

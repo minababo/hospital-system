@@ -4,6 +4,8 @@ from pathlib import Path
 
 import environ
 
+from config.storage import SUPABASE_S3_VARS, default_storage_config
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 env = environ.Env()
@@ -35,6 +37,7 @@ INSTALLED_APPS = [
     "accounts",
     "reports",
     "doctors",
+    "patients",
 ]
 
 MIDDLEWARE = [
@@ -112,10 +115,19 @@ STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
+# Uploaded files. MEDIA_URL is not served by any URL pattern: documents are only
+# downloaded through views that check the user's role.
+MEDIA_ROOT = BASE_DIR / "media"
+MEDIA_URL = "/media/"
+MAX_UPLOAD_MB = env.int("MAX_UPLOAD_MB", default=5)
+
+# Render sets RENDER=true on its servers.
+ON_RENDER = env.bool("RENDER", default=False)
+
 STORAGES = {
-    "default": {
-        "BACKEND": "django.core.files.storage.FileSystemStorage",
-    },
+    "default": default_storage_config(
+        {name: env(name, default="") for name in SUPABASE_S3_VARS}, on_render=ON_RENDER
+    ),
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     },

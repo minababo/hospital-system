@@ -1,12 +1,15 @@
 import itertools
 import runpy
+from datetime import date
 from decimal import Decimal
 
 import pytest
 from django.conf import settings as django_settings
+from django.core.files.uploadedfile import SimpleUploadedFile
 
 from accounts.models import Role, User
 from doctors.models import Department, Doctor
+from patients.models import Patient
 
 
 @pytest.fixture(autouse=True)
@@ -16,10 +19,12 @@ def _fast_password_hasher(settings):
 
 
 @pytest.fixture(autouse=True)
-def _plain_static_storage(settings):
-    # Tests run with DEBUG=False, and the manifest storage fails without collectstatic.
+def _test_storages(settings):
     settings.STORAGES = {
-        **settings.STORAGES,
+        # Uploads stay in memory: nothing is written to disk or sent to Supabase,
+        # and each test starts with an empty storage.
+        "default": {"BACKEND": "django.core.files.storage.InMemoryStorage"},
+        # Tests run with DEBUG=False, and the manifest storage fails without collectstatic.
         "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
     }
 
@@ -91,6 +96,42 @@ def make_doctor(make_user, make_department):
         return Doctor.objects.create(**kwargs)
 
     return _make_doctor
+
+
+@pytest.fixture
+def make_patient(db):
+    counter = itertools.count(1)
+
+    def _make_patient(**kwargs):
+        n = next(counter)
+        kwargs.setdefault("first_name", "Patient")
+        kwargs.setdefault("last_name", f"Number{n}")
+        kwargs.setdefault("date_of_birth", date(1990, 1, 1))
+        kwargs.setdefault("gender", Patient.Gender.FEMALE)
+        kwargs.setdefault("phone", f"07700{n:05d}")
+        kwargs.setdefault("address", "1 Main Street, Colombo")
+        return Patient.objects.create(**kwargs)
+
+    return _make_patient
+
+
+# Smallest byte strings that pass the file-type checks in common/validators.py.
+SAMPLE_FILE_BYTES = {
+    "pdf": b"%PDF-1.4\n% test document\n",
+    "png": b"\x89PNG\r\n\x1a\n" + b"\x00" * 16,
+    "jpg": b"\xff\xd8\xff\xe0" + b"\x00" * 16,
+}
+
+
+@pytest.fixture
+def make_upload():
+    """make_upload("scan.pdf") -> an uploaded file with valid PDF bytes.
+    Pass content=... to control the bytes (e.g. to fake a renamed file)."""
+
+    def _make_upload(name="report.pdf", content=SAMPLE_FILE_BYTES["pdf"], content_type=None):
+        return SimpleUploadedFile(name, content, content_type=content_type)
+
+    return _make_upload
 
 
 @pytest.fixture
