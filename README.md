@@ -55,6 +55,23 @@ ruff check . && ruff format --check .               # lint and format check
 python manage.py makemigrations --check --dry-run   # confirm no missing migrations
 ```
 
+## Roles and access
+
+Staff log in with a username and password; there is no patient login. Every user has exactly one
+role: **Admin, Doctor, Nurse, Receptionist, Lab Staff, Pharmacist** or **Accountant**. Each role
+has its own dashboard and sidebar. Only Admins can manage user accounts.
+
+Access control is enforced on the server for every request:
+
+- `LoginRequiredMiddleware` sends anyone who is not logged in to the login page. The only public
+  pages are the login page and `/healthz/`.
+- Each view declares the roles it allows (`RoleRequiredMixin` / `role_required` in
+  `accounts/permissions.py`). A logged-in user with any other role gets a 403 page.
+- Hiding sidebar links is only cosmetic; it is not what protects a page.
+
+Sessions end after `SESSION_IDLE_TIMEOUT_MINUTES` of inactivity (default 30) and when the browser
+closes.
+
 ## Deployment (Render + Supabase)
 
 The app runs as a Render web service backed by a Supabase PostgreSQL database.
@@ -74,6 +91,7 @@ Environment variables set on Render:
 | `DATABASE_URL`    | Supabase session pooler connection string, ending in `?sslmode=require` |
 | `WEB_CONCURRENCY` | Number of gunicorn worker processes                                     |
 | `LOG_LEVEL`       | Logging level (e.g. `INFO`)                                             |
+| `SESSION_IDLE_TIMEOUT_MINUTES` | Minutes of inactivity before a user is logged out (default 30) |
 
 Render sets `RENDER_EXTERNAL_HOSTNAME` and `PORT` itself. The hostname is added to
 `ALLOWED_HOSTS` and `CSRF_TRUSTED_ORIGINS` automatically.

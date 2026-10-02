@@ -5,30 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}HMS{% endblock %} | Hospital Management System</title>
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style type="text/tailwindcss">
+    @layer base {
+      input[type="text"], input[type="email"], input[type="password"], input[type="search"], select {
+        @apply w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none;
+      }
+    }
+  </style>
 </head>
 <body class="min-h-screen bg-slate-50 text-slate-800 antialiased">
-  <header class="border-b border-slate-200 bg-white">
-    <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-      <a href="{% url 'home' %}" class="text-lg font-semibold tracking-tight text-slate-900">HMS</a>
-    </div>
-  </header>
-
-  <main class="mx-auto max-w-6xl px-4 py-6">
-    {% if messages %}
-      <ul class="mb-6 space-y-2">
-        {% for message in messages %}
-          <li class="rounded-md border px-4 py-3 text-sm
-            {% if message.tags == 'error' %}border-red-200 bg-red-50 text-red-800
-            {% elif message.tags == 'success' %}border-green-200 bg-green-50 text-green-800
-            {% elif message.tags == 'warning' %}border-amber-200 bg-amber-50 text-amber-800
-            {% else %}border-slate-200 bg-white text-slate-700{% endif %}">
-            {{ message }}
-          </li>
-        {% endfor %}
-      </ul>
-    {% endif %}
-
-    {% block content %}{% endblock %}
-  </main>
+  {% block body %}{% endblock %}
 </body>
 </html>

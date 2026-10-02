@@ -1,0 +1,13 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}Nurse Dashboard{% endblock %}
+
+{% block content %}
+  <h1 class="text-2xl font-semibold text-slate-900">Nurse Dashboard</h1>
+  <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    {% include "reports/partials/stat_card.html" with label="Admitted patients" %}
+    {% include "reports/partials/stat_card.html" with label="Available beds" %}
+    {% include "reports/partials/stat_card.html" with label="Admissions today" %}
+    {% include "reports/partials/stat_card.html" with label="Discharges today" %}
+  </div>
+{% endblock %}
