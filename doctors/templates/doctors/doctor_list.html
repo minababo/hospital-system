@@ -1,0 +1,67 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}Doctors{% endblock %}
+
+{% block content %}
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-2xl font-semibold text-slate-900">Doctors</h1>
+    {% if can_manage %}
+      <a href="{% url 'doctors:doctor_create' %}" class="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Add doctor</a>
+    {% endif %}
+  </div>
+
+  {% if users_without_profile %}
+    <div class="mt-6 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+      <p class="font-medium">These doctor accounts have no doctor profile yet:</p>
+      <ul class="mt-2 space-y-1">
+        {% for doctor_user in users_without_profile %}
+          <li>
+            {{ doctor_user.get_full_name|default:doctor_user.username }}
+            &mdash; <a href="{% url 'doctors:doctor_complete_profile' doctor_user.pk %}" class="font-medium underline">Complete profile</a>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
+  <form method="get" class="mt-6 grid gap-3 sm:grid-cols-4">
+    <input type="search" name="search" value="{{ filter_form.search.value|default:'' }}" placeholder="Search name, specialization or SLMC no." class="sm:col-span-2">
+    {{ filter_form.department }}
+    {{ filter_form.is_active }}
+    <div class="flex gap-2 sm:col-span-4">
+      <button type="submit" class="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Filter</button>
+      <a href="{% url 'doctors:doctor_list' %}" class="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">Clear</a>
+    </div>
+  </form>
+
+  <div class="mt-6 overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
+    <table class="min-w-full divide-y divide-slate-200 text-sm">
+      <thead class="bg-slate-50 text-left text-xs font-semibold tracking-wide text-slate-500 uppercase">
+        <tr>
+          <th class="px-4 py-3">Name</th>
+          <th class="px-4 py-3">Department</th>
+          <th class="px-4 py-3">Specialization</th>
+          <th class="px-4 py-3 text-right">Fee</th>
+          <th class="px-4 py-3">Status</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for doctor in doctors %}
+          <tr>
+            <td class="px-4 py-3 font-medium text-slate-900">
+              <a href="{% url 'doctors:doctor_detail' doctor.pk %}" class="hover:underline">{{ doctor }}</a>
+            </td>
+            <td class="px-4 py-3">{{ doctor.department.name }}</td>
+            <td class="px-4 py-3">{{ doctor.specialization }}</td>
+            <td class="px-4 py-3 text-right whitespace-nowrap">Rs. {{ doctor.consultation_fee|floatformat:"2g" }}</td>
+            <td class="px-4 py-3">{% include "doctors/partials/active_badge.html" with active=doctor.is_active %}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" class="px-4 py-6 text-center text-slate-500">No doctors found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% include "partials/pagination.html" %}
+{% endblock %}

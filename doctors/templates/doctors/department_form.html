@@ -1,0 +1,17 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}{% if object %}Edit department{% else %}New department{% endif %}{% endblock %}
+
+{% block content %}
+  <a href="{% url 'doctors:department_list' %}" class="text-sm text-slate-600 hover:text-slate-900">&larr; Back to departments</a>
+  <h1 class="mt-2 text-2xl font-semibold text-slate-900">{% if object %}Edit {{ object.name }}{% else %}New department{% endif %}</h1>
+
+  <form method="post" class="mt-6 max-w-xl space-y-4 rounded-lg border border-slate-200 bg-white p-6 shadow-sm" novalidate>
+    {% csrf_token %}
+    {% include "partials/form_errors.html" %}
+    {% for field in form %}
+      {% include "partials/form_field.html" %}
+    {% endfor %}
+    <button type="submit" class="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Save</button>
+  </form>
+{% endblock %}

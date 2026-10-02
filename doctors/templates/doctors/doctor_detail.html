@@ -1,0 +1,64 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}{{ doctor }}{% endblock %}
+
+{% block content %}
+  {% if user.role != "DOCTOR" %}
+    <a href="{% url 'doctors:doctor_list' %}" class="text-sm text-slate-600 hover:text-slate-900">&larr; Back to doctors</a>
+  {% endif %}
+  <div class="mt-2 flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-2xl font-semibold text-slate-900">{{ doctor }}</h1>
+    {% if can_manage %}
+      <a href="{% url 'doctors:doctor_update' doctor.pk %}" class="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">Edit</a>
+    {% endif %}
+  </div>
+
+  <dl class="mt-6 grid gap-4 rounded-lg border border-slate-200 bg-white p-6 text-sm shadow-sm sm:grid-cols-2 lg:grid-cols-3">
+    <div><dt class="text-slate-500">Department</dt><dd class="mt-1 font-medium text-slate-900">{{ doctor.department.name }}</dd></div>
+    <div><dt class="text-slate-500">Specialization</dt><dd class="mt-1 font-medium text-slate-900">{{ doctor.specialization }}</dd></div>
+    <div><dt class="text-slate-500">SLMC registration no.</dt><dd class="mt-1 font-medium text-slate-900">{{ doctor.registration_number }}</dd></div>
+    <div><dt class="text-slate-500">Qualification</dt><dd class="mt-1 font-medium text-slate-900">{{ doctor.qualification|default:"—" }}</dd></div>
+    <div><dt class="text-slate-500">Phone</dt><dd class="mt-1 font-medium text-slate-900">{{ doctor.phone }}</dd></div>
+    <div><dt class="text-slate-500">Email</dt><dd class="mt-1 font-medium text-slate-900">{{ doctor.user.email|default:"—" }}</dd></div>
+    <div><dt class="text-slate-500">Consultation fee</dt><dd class="mt-1 font-medium text-slate-900">Rs. {{ doctor.consultation_fee|floatformat:"2g" }}</dd></div>
+    <div><dt class="text-slate-500">Status</dt><dd class="mt-1">{% include "doctors/partials/active_badge.html" with active=doctor.is_active %}</dd></div>
+  </dl>
+
+  <div class="mt-8 flex flex-wrap items-center justify-between gap-3">
+    <h2 class="text-lg font-semibold text-slate-900">Weekly schedule</h2>
+    {% if can_manage %}
+      <a href="{% url 'doctors:schedule_create' doctor.pk %}" class="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Add block</a>
+    {% endif %}
+  </div>
+
+  <div class="mt-4 overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
+    <table class="min-w-full divide-y divide-slate-200 text-sm">
+      <tbody class="divide-y divide-slate-100">
+        {% for day, blocks in weekly_schedule %}
+          <tr>
+            <th scope="row" class="w-32 px-4 py-3 text-left align-top font-medium text-slate-700">{{ day }}</th>
+            <td class="px-4 py-3">
+              {% for block in blocks %}
+                <div class="flex flex-wrap items-center gap-3 py-1 {% if not block.is_active %}text-slate-400{% endif %}">
+                  <span class="font-medium">{{ block.start_time|time:"H:i" }}&ndash;{{ block.end_time|time:"H:i" }}</span>
+                  <span>{{ block.slot_minutes }} min slots</span>
+                  {% if not block.is_active %}<span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs">Inactive</span>{% endif %}
+                  {% if can_manage %}
+                    <a href="{% url 'doctors:schedule_update' block.pk %}" class="text-slate-700 hover:underline">Edit</a>
+                    <form method="post" action="{% url 'doctors:schedule_delete' block.pk %}"
+                          onsubmit="return confirm('Delete this schedule block?');">
+                      {% csrf_token %}
+                      <button type="submit" class="text-red-700 hover:underline">Delete</button>
+                    </form>
+                  {% endif %}
+                </div>
+              {% empty %}
+                <span class="text-slate-400">Not working</span>
+              {% endfor %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

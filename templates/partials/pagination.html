@@ -1,0 +1,13 @@
+{% if page_obj.has_other_pages %}
+  <nav class="mt-4 flex items-center justify-between text-sm">
+    <span class="text-slate-600">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    <div class="flex gap-2">
+      {% if page_obj.has_previous %}
+        <a href="{% querystring page=page_obj.previous_page_number %}" class="rounded-md border border-slate-300 px-3 py-1.5 hover:bg-slate-50">Previous</a>
+      {% endif %}
+      {% if page_obj.has_next %}
+        <a href="{% querystring page=page_obj.next_page_number %}" class="rounded-md border border-slate-300 px-3 py-1.5 hover:bg-slate-50">Next</a>
+      {% endif %}
+    </div>
+  </nav>
+{% endif %}
