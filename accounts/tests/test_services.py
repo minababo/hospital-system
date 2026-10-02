@@ -23,10 +23,10 @@ def test_create_user(admin_user_obj):
 def test_update_user_changes_role(admin_user_obj, make_user):
     user = make_user(role=Role.NURSE)
 
-    services.update_user(user, acting_user=admin_user_obj, role=Role.DOCTOR)
+    services.update_user(user, acting_user=admin_user_obj, role=Role.PHARMACIST)
 
     user.refresh_from_db()
-    assert user.role == Role.DOCTOR
+    assert user.role == Role.PHARMACIST
 
 
 def test_update_user_rejects_unknown_fields(admin_user_obj, make_user):
@@ -36,7 +36,7 @@ def test_update_user_rejects_unknown_fields(admin_user_obj, make_user):
 
 def test_admin_cannot_remove_own_admin_role(admin_user_obj):
     with pytest.raises(ValidationError, match="Admin role"):
-        services.update_user(admin_user_obj, acting_user=admin_user_obj, role=Role.DOCTOR)
+        services.update_user(admin_user_obj, acting_user=admin_user_obj, role=Role.NURSE)
 
     admin_user_obj.refresh_from_db()
     assert admin_user_obj.role == Role.ADMIN
@@ -71,3 +71,36 @@ def test_admin_cannot_deactivate_self(admin_user_obj):
 
     admin_user_obj.refresh_from_db()
     assert admin_user_obj.is_active is True
+
+
+# --- Doctor role is managed by the doctors module ---------------------------
+
+
+def test_create_user_rejects_doctor_role_without_flag(admin_user_obj):
+    with pytest.raises(ValidationError, match="Doctors"):
+        services.create_user(
+            username="sneakydoc",
+            password="Str0ng-Passw0rd!",
+            role=Role.DOCTOR,
+            first_name="A",
+            last_name="B",
+            email="a@example.com",
+            acting_user=admin_user_obj,
+        )
+
+
+def test_update_user_cannot_change_role_to_doctor(admin_user_obj, make_user):
+    user = make_user(role=Role.NURSE)
+
+    with pytest.raises(ValidationError, match="Doctor role"):
+        services.update_user(user, acting_user=admin_user_obj, role=Role.DOCTOR)
+
+
+def test_update_user_cannot_change_role_from_doctor(admin_user_obj, make_doctor):
+    doctor_user = make_doctor().user
+
+    with pytest.raises(ValidationError, match="Doctor role"):
+        services.update_user(doctor_user, acting_user=admin_user_obj, role=Role.NURSE)
+
+    doctor_user.refresh_from_db()
+    assert doctor_user.role == Role.DOCTOR

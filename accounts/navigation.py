@@ -3,34 +3,43 @@ from accounts.models import Role
 # Sidebar links per role as (label, url name), in display order.
 # Later tasks add their module links here. Showing a link is cosmetic only:
 # each view enforces its own roles.
+DASHBOARD = ("Dashboard", "dashboard")
+CHANGE_PASSWORD = ("Change password", "accounts:password_change")
+DOCTORS = ("Doctors", "doctors:doctor_list")
+
 NAV_ITEMS = {
     Role.ADMIN: [
-        ("Dashboard", "dashboard"),
+        DASHBOARD,
         ("Users", "accounts:user_list"),
-        ("Change password", "accounts:password_change"),
+        ("Departments", "doctors:department_list"),
+        DOCTORS,
+        CHANGE_PASSWORD,
     ],
     Role.DOCTOR: [
-        ("Dashboard", "dashboard"),
-        ("Change password", "accounts:password_change"),
+        DASHBOARD,
+        ("My profile", "doctors:me"),
+        CHANGE_PASSWORD,
     ],
     Role.NURSE: [
-        ("Dashboard", "dashboard"),
-        ("Change password", "accounts:password_change"),
+        DASHBOARD,
+        DOCTORS,
+        CHANGE_PASSWORD,
     ],
     Role.RECEPTIONIST: [
-        ("Dashboard", "dashboard"),
-        ("Change password", "accounts:password_change"),
+        DASHBOARD,
+        DOCTORS,
+        CHANGE_PASSWORD,
     ],
     Role.LAB_STAFF: [
-        ("Dashboard", "dashboard"),
-        ("Change password", "accounts:password_change"),
+        DASHBOARD,
+        CHANGE_PASSWORD,
     ],
     Role.PHARMACIST: [
-        ("Dashboard", "dashboard"),
-        ("Change password", "accounts:password_change"),
+        DASHBOARD,
+        CHANGE_PASSWORD,
     ],
     Role.ACCOUNTANT: [
-        ("Dashboard", "dashboard"),
-        ("Change password", "accounts:password_change"),
+        DASHBOARD,
+        CHANGE_PASSWORD,
     ],
 }

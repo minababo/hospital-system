@@ -30,7 +30,7 @@ def valid_create_data(**overrides):
         "first_name": "Kamal",
         "last_name": "Fernando",
         "email": "kamal@example.com",
-        "role": Role.DOCTOR,
+        "role": Role.NURSE,
         "password1": "Very-Str0ng-Passw0rd",
         "password2": "Very-Str0ng-Passw0rd",
     }
@@ -106,7 +106,7 @@ def test_create_valid_user(logged_in_admin):
 
     assert response.status_code == 302
     user = User.objects.get(username="newdoc")
-    assert user.role == Role.DOCTOR
+    assert user.role == Role.NURSE
     assert user.check_password("Very-Str0ng-Passw0rd")
 
 
@@ -184,7 +184,7 @@ def test_admin_cannot_remove_own_admin_role_via_view(logged_in_admin, admin_user
             "first_name": admin_user_obj.first_name,
             "last_name": admin_user_obj.last_name,
             "email": admin_user_obj.email,
-            "role": Role.DOCTOR,
+            "role": Role.NURSE,
             "is_active": "on",
         },
     )
@@ -249,3 +249,43 @@ def test_toggle_active_rejects_get(logged_in_admin, target_user):
     assert response.status_code == 405
     target_user.refresh_from_db()
     assert target_user.is_active is True
+
+
+# --- Doctor role ------------------------------------------------------------
+
+
+def test_create_form_has_no_doctor_role(logged_in_admin):
+    response = logged_in_admin.get(reverse("accounts:user_create"))
+
+    role_values = [value for value, _ in response.context["form"].fields["role"].choices]
+    assert Role.DOCTOR not in role_values
+    assert Role.NURSE in role_values
+
+
+def test_create_rejects_doctor_role(logged_in_admin):
+    response = logged_in_admin.post(
+        reverse("accounts:user_create"), valid_create_data(role=Role.DOCTOR)
+    )
+
+    assert "role" in response.context["form"].errors
+    assert not User.objects.filter(username="newdoc").exists()
+
+
+def test_edit_form_shows_doctor_role_read_only(logged_in_admin, make_doctor):
+    doctor_user = make_doctor().user
+
+    response = logged_in_admin.post(
+        reverse("accounts:user_update", args=[doctor_user.pk]),
+        {
+            "first_name": "Changed",
+            "last_name": doctor_user.last_name,
+            "email": doctor_user.email,
+            "role": Role.NURSE,  # ignored: the field is disabled
+            "is_active": "on",
+        },
+    )
+
+    assert response.status_code == 302
+    doctor_user.refresh_from_db()
+    assert doctor_user.role == Role.DOCTOR
+    assert doctor_user.first_name == "Changed"
