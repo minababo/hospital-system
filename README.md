@@ -72,6 +72,19 @@ Access control is enforced on the server for every request:
 Sessions end after `SESSION_IDLE_TIMEOUT_MINUTES` of inactivity (default 30) and when the browser
 closes.
 
+## Modules
+
+| Module | URL | Who can use it |
+|--------|-----|----------------|
+| Users | `/accounts/users/` | Admin |
+| Departments | `/doctors/departments/` | Admin (create, edit, activate/deactivate) |
+| Doctors | `/doctors/` | View: Admin, Receptionist, Nurse, Doctor. Add/edit doctors and schedules: Admin |
+| My profile | `/doctors/me/` | Doctor (own profile and weekly schedule) |
+
+Doctors are added under **Doctors**, not **Users**: adding a doctor creates their login account
+and doctor profile together. A doctor's weekly schedule is made of blocks (e.g. Monday 09:00–12:00
+in 15-minute slots) that cannot overlap.
+
 ## Deployment (Render + Supabase)
 
 The app runs as a Render web service backed by a Supabase PostgreSQL database.

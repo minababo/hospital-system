@@ -1,0 +1,56 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}Departments{% endblock %}
+
+{% block content %}
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-2xl font-semibold text-slate-900">Departments</h1>
+    <a href="{% url 'doctors:department_create' %}" class="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">New department</a>
+  </div>
+
+  <form method="get" class="mt-6 grid gap-3 sm:grid-cols-4">
+    <input type="search" name="search" value="{{ filter_form.search.value|default:'' }}" placeholder="Search by name" class="sm:col-span-2">
+    {{ filter_form.is_active }}
+    <div class="flex gap-2">
+      <button type="submit" class="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Filter</button>
+      <a href="{% url 'doctors:department_list' %}" class="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">Clear</a>
+    </div>
+  </form>
+
+  <div class="mt-6 overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
+    <table class="min-w-full divide-y divide-slate-200 text-sm">
+      <thead class="bg-slate-50 text-left text-xs font-semibold tracking-wide text-slate-500 uppercase">
+        <tr>
+          <th class="px-4 py-3">Name</th>
+          <th class="px-4 py-3">Description</th>
+          <th class="px-4 py-3">Doctors</th>
+          <th class="px-4 py-3">Status</th>
+          <th class="px-4 py-3 text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for department in departments %}
+          <tr>
+            <td class="px-4 py-3 font-medium text-slate-900">{{ department.name }}</td>
+            <td class="px-4 py-3 text-slate-600">{{ department.description|truncatechars:80|default:"—" }}</td>
+            <td class="px-4 py-3">{{ department.doctor_count }}</td>
+            <td class="px-4 py-3">{% include "doctors/partials/active_badge.html" with active=department.is_active %}</td>
+            <td class="px-4 py-3">
+              <div class="flex justify-end gap-3 whitespace-nowrap">
+                <a href="{% url 'doctors:department_update' department.pk %}" class="text-slate-700 hover:underline">Edit</a>
+                <form method="post" action="{% url 'doctors:department_toggle_active' department.pk %}">
+                  {% csrf_token %}
+                  <button type="submit" class="text-slate-700 hover:underline">{% if department.is_active %}Deactivate{% else %}Activate{% endif %}</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" class="px-4 py-6 text-center text-slate-500">No departments found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% include "partials/pagination.html" %}
+{% endblock %}
