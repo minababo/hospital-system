@@ -1,0 +1,82 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}Users{% endblock %}
+
+{% block content %}
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-2xl font-semibold text-slate-900">Users</h1>
+    <a href="{% url 'accounts:user_create' %}" class="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">New user</a>
+  </div>
+
+  <form method="get" class="mt-6 grid gap-3 sm:grid-cols-4">
+    <input type="search" name="search" value="{{ filter_form.search.value|default:'' }}" placeholder="Search name, username or email" class="sm:col-span-2">
+    {{ filter_form.role }}
+    {{ filter_form.is_active }}
+    <div class="flex gap-2 sm:col-span-4">
+      <button type="submit" class="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Filter</button>
+      <a href="{% url 'accounts:user_list' %}" class="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">Clear</a>
+    </div>
+  </form>
+
+  <div class="mt-6 overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
+    <table class="min-w-full divide-y divide-slate-200 text-sm">
+      <thead class="bg-slate-50 text-left text-xs font-semibold tracking-wide text-slate-500 uppercase">
+        <tr>
+          <th class="px-4 py-3">Name</th>
+          <th class="px-4 py-3">Username</th>
+          <th class="px-4 py-3">Email</th>
+          <th class="px-4 py-3">Role</th>
+          <th class="px-4 py-3">Status</th>
+          <th class="px-4 py-3 text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for managed_user in users %}
+          <tr>
+            <td class="px-4 py-3 font-medium text-slate-900">{{ managed_user.get_full_name|default:"—" }}</td>
+            <td class="px-4 py-3">{{ managed_user.username }}</td>
+            <td class="px-4 py-3">{{ managed_user.email|default:"—" }}</td>
+            <td class="px-4 py-3">{{ managed_user.get_role_display }}</td>
+            <td class="px-4 py-3">
+              {% if managed_user.is_active %}
+                <span class="rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">Active</span>
+              {% else %}
+                <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">Inactive</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3">
+              <div class="flex justify-end gap-3 whitespace-nowrap">
+                <a href="{% url 'accounts:user_update' managed_user.pk %}" class="text-slate-700 hover:underline">Edit</a>
+                <a href="{% url 'accounts:user_password' managed_user.pk %}" class="text-slate-700 hover:underline">Password</a>
+                {% if managed_user.pk != user.pk %}
+                  <form method="post" action="{% url 'accounts:user_toggle_active' managed_user.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="text-slate-700 hover:underline">
+                      {% if managed_user.is_active %}Deactivate{% else %}Activate{% endif %}
+                    </button>
+                  </form>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="px-4 py-6 text-center text-slate-500">No users found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if page_obj.has_other_pages %}
+    <nav class="mt-4 flex items-center justify-between text-sm">
+      <span class="text-slate-600">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+      <div class="flex gap-2">
+        {% if page_obj.has_previous %}
+          <a href="{% querystring page=page_obj.previous_page_number %}" class="rounded-md border border-slate-300 px-3 py-1.5 hover:bg-slate-50">Previous</a>
+        {% endif %}
+        {% if page_obj.has_next %}
+          <a href="{% querystring page=page_obj.next_page_number %}" class="rounded-md border border-slate-300 px-3 py-1.5 hover:bg-slate-50">Next</a>
+        {% endif %}
+      </div>
+    </nav>
+  {% endif %}
+{% endblock %}

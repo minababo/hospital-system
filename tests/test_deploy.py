@@ -1,7 +1,4 @@
-import runpy
-
 import pytest
-from django.conf import settings
 
 DEV_ONLY_MAIL_BACKENDS = {
     "django.core.mail.backends.console.EmailBackend",
@@ -19,25 +16,19 @@ def test_healthz_makes_no_database_queries(client, django_assert_num_queries):
     assert response.status_code == 200
 
 
-def _load_settings_module():
-    # Execute settings.py as a plain module so env changes take effect
-    # without touching the already-configured django.conf.settings.
-    return runpy.run_path(str(settings.BASE_DIR / "config" / "settings.py"))
-
-
-def test_production_mailer_is_not_a_dev_only_backend(monkeypatch):
+def test_production_mailer_is_not_a_dev_only_backend(monkeypatch, load_settings):
     monkeypatch.setenv("DEBUG", "False")
     monkeypatch.delenv("MAILER_BACKEND", raising=False)
 
-    loaded = _load_settings_module()
+    loaded = load_settings()
 
     assert loaded["MAILERS"]["default"]["BACKEND"] not in DEV_ONLY_MAIL_BACKENDS
 
 
-def test_render_hostname_is_allowed_and_csrf_trusted(monkeypatch):
+def test_render_hostname_is_allowed_and_csrf_trusted(monkeypatch, load_settings):
     monkeypatch.setenv("RENDER_EXTERNAL_HOSTNAME", "hms-test.onrender.com")
 
-    loaded = _load_settings_module()
+    loaded = load_settings()
 
     assert "hms-test.onrender.com" in loaded["ALLOWED_HOSTS"]
     assert "localhost" in loaded["ALLOWED_HOSTS"]

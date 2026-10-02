@@ -1,0 +1,13 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}Doctor Dashboard{% endblock %}
+
+{% block content %}
+  <h1 class="text-2xl font-semibold text-slate-900">Doctor Dashboard</h1>
+  <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    {% include "reports/partials/stat_card.html" with label="Today's appointments" %}
+    {% include "reports/partials/stat_card.html" with label="Patients seen today" %}
+    {% include "reports/partials/stat_card.html" with label="Pending lab results" %}
+    {% include "reports/partials/stat_card.html" with label="Prescriptions issued today" %}
+  </div>
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+  <h1 class="text-2xl font-semibold text-slate-900">Admin Dashboard</h1>
+  <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    {% include "reports/partials/stat_card.html" with label="Total patients" %}
+    {% include "reports/partials/stat_card.html" with label="Today's appointments" %}
+    {% include "reports/partials/stat_card.html" with label="Revenue this month" %}
+    {% include "reports/partials/stat_card.html" with label="Pending lab requests" %}
+    {% include "reports/partials/stat_card.html" with label="Pharmacy alerts" %}
+    {% include "reports/partials/stat_card.html" with label="Active staff" %}
+  </div>
+{% endblock %}
