@@ -6,6 +6,10 @@ from accounts.models import Role, User
 REQUIRED_PROFILE_FIELDS = ("first_name", "last_name", "email")
 
 
+def _without_doctor(choices):
+    return [(value, label) for value, label in choices if value != Role.DOCTOR]
+
+
 class UniqueEmailMixin:
     """Emails must be unique ignoring case (Alice@x.com == alice@x.com)."""
 
@@ -28,6 +32,10 @@ class UserCreateForm(UniqueEmailMixin, UserCreationForm):
         super().__init__(*args, **kwargs)
         for name in REQUIRED_PROFILE_FIELDS:
             self.fields[name].required = True
+        # Subclasses (e.g. the doctor account form) may leave out the role field.
+        if "role" in self.fields:
+            self.fields["role"].choices = _without_doctor(self.fields["role"].choices)
+            self.fields["role"].help_text = "Doctors are added under Doctors."
 
 
 class UserUpdateForm(UniqueEmailMixin, forms.ModelForm):
@@ -39,6 +47,13 @@ class UserUpdateForm(UniqueEmailMixin, forms.ModelForm):
         super().__init__(*args, **kwargs)
         for name in REQUIRED_PROFILE_FIELDS:
             self.fields[name].required = True
+        role = self.fields["role"]
+        if self.instance.role == Role.DOCTOR:
+            # Disabled fields ignore submitted data and keep the current value.
+            role.disabled = True
+            role.help_text = "Doctor accounts are managed under Doctors."
+        else:
+            role.choices = _without_doctor(role.choices)
 
 
 class AdminSetPasswordForm(SetPasswordForm):

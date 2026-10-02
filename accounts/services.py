@@ -8,8 +8,17 @@ from accounts.models import Role, User
 UPDATABLE_FIELDS = {"first_name", "last_name", "email", "role", "is_active"}
 
 
+DOCTOR_ROLE_MESSAGE = "Doctor accounts are managed under Doctors."
+
+
 @transaction.atomic
-def create_user(*, username, password, role, first_name, last_name, email, acting_user):
+def create_user(
+    *, username, password, role, first_name, last_name, email, acting_user, allow_doctor=False
+):
+    # A DOCTOR user must always have a Doctor profile, so only doctors.services
+    # (which creates both in one transaction) passes allow_doctor=True.
+    if role == Role.DOCTOR and not allow_doctor:
+        raise ValidationError(DOCTOR_ROLE_MESSAGE)
     return User.objects.create_user(
         username=username,
         password=password,
@@ -30,6 +39,14 @@ def update_user(user, *, acting_user, **fields):
             raise ValidationError("You cannot deactivate your own account.")
         if "role" in fields and fields["role"] != Role.ADMIN:
             raise ValidationError("You cannot remove the Admin role from your own account.")
+
+    if "role" in fields:
+        # Compare with the saved role: a ModelForm may already have changed user.role in memory.
+        saved_role = User.objects.filter(pk=user.pk).values_list("role", flat=True).first()
+        if (saved_role == Role.DOCTOR) != (fields["role"] == Role.DOCTOR):
+            raise ValidationError(
+                f"{DOCTOR_ROLE_MESSAGE} A user cannot be changed to or from the Doctor role."
+            )
 
     with transaction.atomic():
         for name, value in fields.items():
