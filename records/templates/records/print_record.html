@@ -1,0 +1,59 @@
+{% extends "records/print_base.html" %}
+
+{% block title %}Consultation summary{% endblock %}
+{% block heading %}Consultation summary &middot; {{ record.appointment.date|date:"d M Y" }}{% endblock %}
+
+{% block content %}
+  <p>
+    <strong>{{ record.patient.full_name }}</strong> ({{ record.patient.mrn }}) &middot;
+    {{ record.patient.age }} years &middot; {{ record.patient.get_gender_display }}<br>
+    <span class="muted">Doctor:</span> {{ record.doctor }} ({{ record.doctor.department.name }})
+  </p>
+  {% if record.patient.allergies %}<p class="allergy">Allergies: {{ record.patient.allergies }}</p>{% endif %}
+
+  <h2>Presenting complaint</h2>
+  <p>{{ record.presenting_complaint|linebreaksbr }}</p>
+
+  {% if vitals %}
+    <h2>Vitals</h2>
+    <p>
+      {% if vitals.bp_systolic %}BP {{ vitals.bp_systolic }}/{{ vitals.bp_diastolic }} mmHg &middot; {% endif %}
+      {% if vitals.pulse_bpm %}Pulse {{ vitals.pulse_bpm }} bpm &middot; {% endif %}
+      {% if vitals.temperature_c %}Temp {{ vitals.temperature_c }} °C &middot; {% endif %}
+      {% if vitals.spo2_percent %}SpO₂ {{ vitals.spo2_percent }}% &middot; {% endif %}
+      {% if vitals.bmi %}BMI {{ vitals.bmi }}{% endif %}
+    </p>
+  {% endif %}
+
+  {% if record.examination_findings %}<h2>Examination</h2><p>{{ record.examination_findings|linebreaksbr }}</p>{% endif %}
+
+  <h2>Diagnoses</h2>
+  <ul>
+    {% for diagnosis in record.diagnoses.all %}
+      <li>{{ diagnosis.description }}{% if diagnosis.icd10_code %} ({{ diagnosis.icd10_code }}){% endif %} &middot; {{ diagnosis.get_diagnosis_type_display }}</li>
+    {% endfor %}
+  </ul>
+
+  {% if record.treatment_plan %}<h2>Treatment plan</h2><p>{{ record.treatment_plan|linebreaksbr }}</p>{% endif %}
+
+  {% if prescription %}
+    <h2>Prescription ({{ prescription.get_status_display }})</h2>
+    <table>
+      <tr><th>Medicine</th><th>Dose</th><th>Frequency</th><th>Days</th><th>Qty</th></tr>
+      {% for item in prescription.items.all %}
+        <tr><td>{{ item.medicine }}</td><td>{{ item.dose }}</td><td>{{ item.get_frequency_display }}</td><td>{{ item.duration_days }}</td><td>{{ item.quantity }}</td></tr>
+      {% endfor %}
+    </table>
+  {% endif %}
+
+  {% if record.follow_up_date %}<h2>Follow-up</h2><p>{{ record.follow_up_date|date:"d M Y" }}</p>{% endif %}
+
+  {% if record.addenda.all %}
+    <h2>Addenda</h2>
+    {% for addendum in record.addenda.all %}
+      <p>{{ addendum.text|linebreaksbr }}<br><span class="muted">{{ addendum.author }}, {{ addendum.created_at|date:"d M Y H:i" }}</span></p>
+    {% endfor %}
+  {% endif %}
+
+  <p class="muted">Finalized {{ record.finalized_at|date:"d M Y H:i" }}</p>
+{% endblock %}
