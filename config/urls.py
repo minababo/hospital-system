@@ -12,6 +12,7 @@ urlpatterns = [
     path("appointments/", include("appointments.urls")),
     path("records/", include("records.urls")),
     path("pharmacy/", include("pharmacy.urls")),
+    path("billing/", include("billing.urls")),
     path("", include("reports.urls")),
     path("", views.home, name="home"),
 ]

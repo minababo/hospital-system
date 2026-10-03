@@ -1,0 +1,132 @@
+{% extends "layouts/app.html" %}
+{% load money %}
+
+{% block title %}Invoice {{ invoice.number }}{% endblock %}
+
+{% block content %}
+  <a href="{% url 'billing:patient_billing' invoice.patient.pk %}" class="text-sm text-slate-600 hover:text-slate-900">&larr; {{ invoice.patient.full_name }}'s billing</a>
+  <div class="mt-2 flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <h1 class="text-2xl font-semibold text-slate-900">Invoice <span class="font-mono">{{ invoice.number }}</span></h1>
+      <p class="text-sm text-slate-500">{{ invoice.patient }} &middot; created {{ invoice.created_at|date:"d M Y H:i" }}{% if invoice.issued_at %} &middot; issued {{ invoice.issued_at|date:"d M Y H:i" }} by {{ invoice.issued_by|default:"—" }}{% endif %}</p>
+    </div>
+    <div class="flex items-center gap-2">
+      {% include "billing/partials/invoice_status.html" with status=invoice.status label=invoice.get_status_display %}
+      <a href="{% url 'billing:invoice_print' invoice.pk %}" target="_blank" rel="noopener" class="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50">Print invoice</a>
+    </div>
+  </div>
+
+  {% if invoice.status == "VOID" %}
+    <p class="mt-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">Voided {{ invoice.voided_at|date:"d M Y H:i" }} by {{ invoice.voided_by|default:"—" }}: {{ invoice.void_reason }}</p>
+  {% endif %}
+
+  <section class="mt-6 overflow-x-auto rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+    <table class="min-w-full divide-y divide-slate-200 text-sm">
+      <thead class="text-left text-xs font-semibold tracking-wide text-slate-500 uppercase">
+        <tr><th class="py-2 pr-4">Description</th><th class="py-2 pr-4">Type</th><th class="py-2 pr-4 text-right">Qty</th><th class="py-2 pr-4 text-right">Unit price</th><th class="py-2 pr-4 text-right">Amount</th><th></th></tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for charge in charges %}
+          <tr>
+            <td class="py-2 pr-4">{{ charge.description }}</td>
+            <td class="py-2 pr-4">{{ charge.get_charge_type_display }}</td>
+            <td class="py-2 pr-4 text-right">{{ charge.quantity }}</td>
+            <td class="py-2 pr-4 text-right whitespace-nowrap">{{ charge.unit_price|rupees }}</td>
+            <td class="py-2 pr-4 text-right whitespace-nowrap">{{ charge.amount|rupees }}</td>
+            <td class="py-2 text-right">
+              {% if can_edit_draft %}
+                <form method="post" action="{% url 'billing:invoice_charge_remove' invoice.pk charge.pk %}">
+                  {% csrf_token %}<button type="submit" class="text-red-700 hover:underline">Remove</button>
+                </form>
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="py-3 text-slate-500">No charges on this invoice.</td></tr>
+        {% endfor %}
+      </tbody>
+      <tfoot class="text-sm">
+        <tr><td colspan="4" class="pt-3 text-right text-slate-500">Subtotal</td><td class="pt-3 pr-4 text-right whitespace-nowrap">{{ invoice.subtotal|rupees }}</td><td></td></tr>
+        <tr><td colspan="4" class="text-right text-slate-500">Discount{% if invoice.discount_reason %} ({{ invoice.discount_reason }}){% endif %}</td><td class="pr-4 text-right whitespace-nowrap">&minus; {{ invoice.discount|rupees }}</td><td></td></tr>
+        <tr><td colspan="4" class="text-right font-semibold">Total</td><td class="pr-4 text-right font-semibold whitespace-nowrap">{{ invoice.total|rupees }}</td><td></td></tr>
+        <tr><td colspan="4" class="text-right text-slate-500">Paid</td><td class="pr-4 text-right whitespace-nowrap">{{ invoice.amount_paid|rupees }}</td><td></td></tr>
+        <tr><td colspan="4" class="text-right font-semibold">Balance</td><td class="pr-4 text-right text-lg font-semibold whitespace-nowrap">{{ invoice.balance|rupees }}</td><td></td></tr>
+      </tfoot>
+    </table>
+  </section>
+
+  {% if can_edit_draft %}
+    <div class="mt-4 grid gap-4 lg:grid-cols-2">
+      <form method="post" action="{% url 'billing:invoice_charge_add' invoice.pk %}" class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm" novalidate>
+        {% csrf_token %}
+        <h2 class="font-semibold text-slate-900">Add a charge</h2>
+        <div class="mt-3 grid gap-3 sm:grid-cols-2">
+          {% for field in charge_form %}{% include "partials/form_field.html" %}{% endfor %}
+        </div>
+        <button type="submit" class="mt-3 rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">Add charge</button>
+      </form>
+      <form method="post" action="{% url 'billing:invoice_discount' invoice.pk %}" class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm" novalidate>
+        {% csrf_token %}
+        <h2 class="font-semibold text-slate-900">Discount</h2>
+        <div class="mt-3 grid gap-3 sm:grid-cols-2">
+          {% for field in discount_form %}{% include "partials/form_field.html" %}{% endfor %}
+        </div>
+        <button type="submit" class="mt-3 rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">Save discount</button>
+      </form>
+    </div>
+  {% endif %}
+
+  {% if can_issue %}
+    <form method="post" action="{% url 'billing:invoice_issue' invoice.pk %}" class="mt-4"
+          onsubmit="return confirm('Issue this invoice? Its charges and discount can no longer be changed.');">
+      {% csrf_token %}
+      <button type="submit" class="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Issue invoice</button>
+    </form>
+  {% endif %}
+
+  {% if can_take_payment %}
+    <form method="post" action="{% url 'billing:payment_add' invoice.pk %}" class="mt-4 rounded-lg border border-slate-200 bg-white p-6 shadow-sm" novalidate>
+      {% csrf_token %}
+      <h2 class="font-semibold text-slate-900">Receive payment</h2>
+      <div class="mt-3 grid gap-3 sm:grid-cols-3">
+        {% for field in payment_form %}{% include "partials/form_field.html" %}{% endfor %}
+      </div>
+      <button type="submit" class="mt-3 rounded-md bg-green-700 px-4 py-2 text-sm font-medium text-white hover:bg-green-600">Record payment</button>
+    </form>
+  {% endif %}
+
+  <section class="mt-6 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+    <h2 class="text-lg font-semibold text-slate-900">Payments</h2>
+    <ul class="mt-3 divide-y divide-slate-100 text-sm">
+      {% for payment in payments %}
+        <li class="flex flex-wrap items-center justify-between gap-2 py-2 {% if payment.is_voided %}text-slate-400 line-through{% endif %}">
+          <span>
+            <a href="{% url 'billing:receipt' payment.pk %}" target="_blank" rel="noopener" class="font-mono hover:underline">{{ payment.receipt_number }}</a>
+            &middot; {{ payment.received_at|date:"d M Y H:i" }} &middot; {{ payment.get_method_display }}{% if payment.reference %} ({{ payment.reference }}){% endif %}
+            &middot; {{ payment.received_by }}
+          </span>
+          <span class="font-medium">{{ payment.amount|rupees }}</span>
+          {% if payment.is_voided %}
+            <span class="w-full text-xs no-underline">Voided: {{ payment.void_reason }}</span>
+          {% elif can_void %}
+            <form method="post" action="{% url 'billing:payment_void' payment.pk %}" class="flex gap-2">
+              {% csrf_token %}
+              <input type="text" name="reason" placeholder="Reason" required class="max-w-48">
+              <button type="submit" class="text-red-700 hover:underline">Void payment</button>
+            </form>
+          {% endif %}
+        </li>
+      {% empty %}
+        <li class="py-2 text-slate-500">No payments yet.</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  {% if can_void and invoice.status != "VOID" %}
+    <form method="post" action="{% url 'billing:invoice_void' invoice.pk %}" class="mt-4 flex max-w-md flex-wrap items-end gap-2">
+      {% csrf_token %}
+      <div class="grow">{% include "partials/form_field.html" with field=void_form.reason %}</div>
+      <button type="submit" class="rounded-md bg-red-700 px-3 py-2 text-sm font-medium text-white hover:bg-red-600">Void invoice</button>
+    </form>
+  {% endif %}
+{% endblock %}

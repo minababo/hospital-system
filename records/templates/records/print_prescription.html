@@ -1,4 +1,4 @@
-{% extends "records/print_base.html" %}
+{% extends "print/base.html" %}
 
 {% block title %}Prescription{% endblock %}
 {% block heading %}Prescription &middot; {{ prescription.issued_at|date:"d M Y"|default:record.appointment.date }}{% endblock %}
