@@ -10,6 +10,8 @@ from django.views.generic import DetailView, FormView, ListView, UpdateView
 
 from accounts.models import Role
 from accounts.permissions import RoleRequiredMixin, user_has_role
+from appointments.selectors import patient_appointments
+from appointments.views import BOOK_ROLES
 from common.forms import add_service_errors
 from patients import selectors, services
 from patients.forms import DocumentUploadForm, PatientForm
@@ -89,6 +91,8 @@ class PatientDetailView(RoleRequiredMixin, DetailView):
         context["can_edit"] = user_has_role(user, *EDIT_ROLES)
         context["can_view_history"] = user_has_role(user, *HISTORY_ROLES)
         context["can_delete_documents"] = user_has_role(user, *DOC_DELETE_ROLES)
+        context["appointments"] = patient_appointments(self.object)
+        context["can_book"] = user_has_role(user, *BOOK_ROLES)
         return context
 
 

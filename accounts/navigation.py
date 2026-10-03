@@ -7,11 +7,13 @@ DASHBOARD = ("Dashboard", "dashboard")
 CHANGE_PASSWORD = ("Change password", "accounts:password_change")
 DOCTORS = ("Doctors", "doctors:doctor_list")
 PATIENTS = ("Patients", "patients:patient_list")
+APPOINTMENTS = ("Appointments", "appointments:appointment_list")
 
 NAV_ITEMS = {
     Role.ADMIN: [
         DASHBOARD,
         PATIENTS,
+        APPOINTMENTS,
         ("Users", "accounts:user_list"),
         ("Departments", "doctors:department_list"),
         DOCTORS,
@@ -20,18 +22,21 @@ NAV_ITEMS = {
     Role.DOCTOR: [
         DASHBOARD,
         PATIENTS,
+        APPOINTMENTS,
         ("My profile", "doctors:me"),
         CHANGE_PASSWORD,
     ],
     Role.NURSE: [
         DASHBOARD,
         PATIENTS,
+        APPOINTMENTS,
         DOCTORS,
         CHANGE_PASSWORD,
     ],
     Role.RECEPTIONIST: [
         DASHBOARD,
         PATIENTS,
+        APPOINTMENTS,
         DOCTORS,
         CHANGE_PASSWORD,
     ],

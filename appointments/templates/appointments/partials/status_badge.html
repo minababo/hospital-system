@@ -1,0 +1,7 @@
+{# One place for status colours, used by the list, detail, calendar and patient pages. #}
+<span class="inline-block rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap
+  {% if status == 'BOOKED' %}bg-blue-50 text-blue-700
+  {% elif status == 'CHECKED_IN' %}bg-amber-50 text-amber-800
+  {% elif status == 'COMPLETED' %}bg-green-50 text-green-700
+  {% elif status == 'CANCELLED' %}bg-slate-100 text-slate-500 line-through
+  {% elif status == 'NO_SHOW' %}bg-red-50 text-red-700{% endif %}">{{ label }}</span>

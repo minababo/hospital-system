@@ -1,4 +1,6 @@
+from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.utils import timezone
 
 from accounts import services as account_services
 from accounts.models import Role
@@ -74,14 +76,46 @@ def create_schedule(*, doctor, acting_user, **fields):
 
 
 @transaction.atomic
-def update_schedule(schedule, *, acting_user, **fields):
+def update_schedule(schedule, *, acting_user, today=None, **fields):
+    # Read the saved weekday: a ModelForm may already have changed it in memory, and
+    # appointments on the old day must be checked too if the block moves.
+    old_weekday = DoctorSchedule.objects.values_list("weekday", flat=True).get(pk=schedule.pk)
     for name, value in fields.items():
         setattr(schedule, name, value)
     schedule.full_clean()
     schedule.save()
+    _check_upcoming_appointments_fit(schedule.doctor, [old_weekday, schedule.weekday], today=today)
     return schedule
 
 
 @transaction.atomic
-def delete_schedule(schedule, *, acting_user):
+def delete_schedule(schedule, *, acting_user, today=None):
+    weekday = schedule.weekday
     schedule.delete()
+    _check_upcoming_appointments_fit(schedule.doctor, [weekday], today=today)
+
+
+def _check_upcoming_appointments_fit(doctor, weekdays, *, today=None):
+    """Raise if a schedule change would leave upcoming appointments outside working hours.
+
+    Called after the change inside the same transaction, so raising rolls the change back.
+    Uses the reverse relation doctor.appointments instead of importing the appointments
+    app; CANCELLED is the only status that frees a slot.
+    """
+    today = today or timezone.localdate()
+    count = 0
+    for weekday in set(weekdays):
+        blocks = list(doctor.schedules.filter(weekday=weekday, is_active=True))
+        upcoming = doctor.appointments.filter(
+            date__gte=today, date__iso_week_day=weekday + 1
+        ).exclude(status="CANCELLED")
+        count += sum(
+            1
+            for appointment in upcoming
+            if not any(b.start_time <= appointment.start_time < b.end_time for b in blocks)
+        )
+    if count:
+        raise ValidationError(
+            f"{count} upcoming appointment(s) fall outside the new schedule. "
+            "Reschedule or cancel them first."
+        )

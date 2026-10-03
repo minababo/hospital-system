@@ -89,6 +89,34 @@ in 15-minute slots) that cannot overlap.
 Patients get a medical record number (MRN) such as `P000123`. Search accepts a name
 ("kamal perera"), MRN, NIC or phone number in any common format.
 
+## Appointments
+
+Booking (`/appointments/book/`): find the patient, pick a department/doctor and date, then choose
+one of the doctor's free slots and enter the reason for the visit. Free slots come from the
+doctor's weekly schedule minus existing bookings; bookings are allowed up to
+`APPOINTMENT_BOOKING_WINDOW_DAYS` (default 60) ahead.
+
+| Status | How it gets there | Who |
+|--------|-------------------|-----|
+| Booked | Appointment is booked (or rescheduled) | Admin, Receptionist |
+| Checked in | Patient arrives, on the appointment day | Admin, Receptionist, Nurse |
+| Completed | After the consultation | The appointment's own doctor |
+| Cancelled | Cancelled with a reason (booked appointments only); frees the slot | Admin, Receptionist |
+| No-show | Patient didn't come (after the start time) | Admin, Receptionist |
+
+| Page | Who |
+|------|-----|
+| Appointment list (per day) and week calendar | Admin, Receptionist, Nurse, Doctor (doctors see only their own) |
+| Book, reschedule, cancel, mark no-show | Admin, Receptionist |
+| Check in | Admin, Receptionist, Nurse |
+| Complete | Doctor (own appointments) |
+
+**Double-booking protection.** The slot is checked when booking, and the database also has
+partial unique indexes: a doctor (and a patient) can't have two non-cancelled appointments at the
+same date and time. If two people book the same slot at the same moment, the second gets a
+friendly "slot was just booked" message instead of an error page. Doctor schedules can't be
+changed in a way that leaves upcoming appointments outside working hours.
+
 ## File storage
 
 Patient documents (PDF, JPG, PNG up to `MAX_UPLOAD_MB`) are stored in a **private** Supabase
@@ -127,6 +155,7 @@ Environment variables set on Render:
 | `SESSION_IDLE_TIMEOUT_MINUTES` | Minutes of inactivity before a user is logged out (default 30) |
 | `SUPABASE_S3_*` (5 variables) | Supabase Storage connection for uploaded documents (see File storage) |
 | `MAX_UPLOAD_MB` | Largest upload allowed in MB (default 5) |
+| `APPOINTMENT_BOOKING_WINDOW_DAYS` | How many days ahead appointments can be booked (default 60) |
 
 Render sets `RENDER_EXTERNAL_HOSTNAME` and `PORT` itself. The hostname is added to
 `ALLOWED_HOSTS` and `CSRF_TRUSTED_ORIGINS` automatically.

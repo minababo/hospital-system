@@ -1,6 +1,6 @@
 import itertools
 import runpy
-from datetime import date
+from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 
 import pytest
@@ -8,7 +8,8 @@ from django.conf import settings as django_settings
 from django.core.files.uploadedfile import SimpleUploadedFile
 
 from accounts.models import Role, User
-from doctors.models import Department, Doctor
+from appointments.models import Appointment
+from doctors.models import Department, Doctor, DoctorSchedule
 from patients.models import Patient
 
 
@@ -113,6 +114,43 @@ def make_patient(db):
         return Patient.objects.create(**kwargs)
 
     return _make_patient
+
+
+@pytest.fixture
+def make_scheduled_doctor(make_doctor):
+    """A doctor who works 09:00-12:00 in 15-minute slots on the given weekdays
+    (every day by default), so any date can be used in booking tests."""
+
+    def _make_scheduled_doctor(weekdays=range(7), start=time(9), end=time(12), **kwargs):
+        doctor = make_doctor(**kwargs)
+        for weekday in weekdays:
+            DoctorSchedule.objects.create(
+                doctor=doctor, weekday=weekday, start_time=start, end_time=end, slot_minutes=15
+            )
+        return doctor
+
+    return _make_scheduled_doctor
+
+
+@pytest.fixture
+def make_appointment(make_patient, make_doctor):
+    """Creates an Appointment directly (no service checks). Default: Monday 5 Oct 2026,
+    09:00-09:15, status BOOKED."""
+
+    def _make_appointment(**kwargs):
+        if "patient" not in kwargs:
+            kwargs["patient"] = make_patient()
+        if "doctor" not in kwargs:
+            kwargs["doctor"] = make_doctor()
+        kwargs.setdefault("date", date(2026, 10, 5))
+        kwargs.setdefault("start_time", time(9, 0))
+        start = datetime.combine(kwargs["date"], kwargs["start_time"])
+        kwargs.setdefault("end_time", (start + timedelta(minutes=15)).time())
+        kwargs.setdefault("reason", "General check-up")
+        kwargs.setdefault("consultation_fee", kwargs["doctor"].consultation_fee)
+        return Appointment.objects.create(**kwargs)
+
+    return _make_appointment
 
 
 # Smallest byte strings that pass the file-type checks in common/validators.py.

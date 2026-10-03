@@ -1,0 +1,62 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}Appointments{% endblock %}
+
+{% block content %}
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-2xl font-semibold text-slate-900">Appointments</h1>
+    <div class="flex gap-2">
+      <a href="{% url 'appointments:calendar' %}" class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">Calendar</a>
+      {% if can_book %}
+        <a href="{% url 'appointments:book' %}" class="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Book appointment</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="mt-6 flex flex-wrap items-center gap-2 text-sm">
+    <a href="{% querystring date=prev_day|date:'Y-m-d' %}" class="rounded-md border border-slate-300 bg-white px-3 py-1.5 hover:bg-slate-50">&larr; Previous day</a>
+    <a href="{% querystring date=today|date:'Y-m-d' %}" class="rounded-md border border-slate-300 bg-white px-3 py-1.5 hover:bg-slate-50">Today</a>
+    <a href="{% querystring date=next_day|date:'Y-m-d' %}" class="rounded-md border border-slate-300 bg-white px-3 py-1.5 hover:bg-slate-50">Next day &rarr;</a>
+    <span class="ml-2 font-medium text-slate-900">{{ day|date:"l, d M Y" }}</span>
+  </div>
+
+  <form method="get" class="mt-4 grid gap-3 sm:grid-cols-5">
+    <input type="date" name="date" value="{{ day|date:'Y-m-d' }}">
+    {% if not is_doctor %}{{ form.doctor }}{% endif %}
+    {{ form.status }}
+    <input type="search" name="q" value="{{ form.q.value|default:'' }}" placeholder="Patient name or MRN" class="{% if is_doctor %}sm:col-span-2{% endif %}">
+    <button type="submit" class="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Filter</button>
+  </form>
+
+  <div class="mt-6 overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
+    <table class="min-w-full divide-y divide-slate-200 text-sm">
+      <thead class="bg-slate-50 text-left text-xs font-semibold tracking-wide text-slate-500 uppercase">
+        <tr>
+          <th class="px-4 py-3">Time</th>
+          <th class="px-4 py-3">Patient</th>
+          <th class="px-4 py-3">Doctor</th>
+          <th class="px-4 py-3">Status</th>
+          <th class="px-4 py-3 text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for appointment in appointments %}
+          <tr>
+            <td class="px-4 py-3 whitespace-nowrap">
+              <a href="{% url 'appointments:appointment_detail' appointment.pk %}" class="font-medium text-slate-900 hover:underline">{{ appointment.start_time|time:"H:i" }}&ndash;{{ appointment.end_time|time:"H:i" }}</a>
+            </td>
+            <td class="px-4 py-3">
+              {{ appointment.patient.full_name }}
+              <span class="font-mono text-xs text-slate-500">{{ appointment.patient.mrn }}</span>
+            </td>
+            <td class="px-4 py-3">{{ appointment.doctor }}</td>
+            <td class="px-4 py-3">{% include "appointments/partials/status_badge.html" with status=appointment.status label=appointment.get_status_display %}</td>
+            <td class="px-4 py-3">{% include "appointments/partials/action_buttons.html" with actions=appointment.actions %}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" class="px-4 py-6 text-center text-slate-500">No appointments on this day.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

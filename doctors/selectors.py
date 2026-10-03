@@ -63,18 +63,23 @@ def slots_for_date(doctor, date):
 
     This ignores bookings: the appointments module removes already-booked slots.
     """
+    return [start for start, _end in slot_ranges_for_date(doctor, date)]
+
+
+def slot_ranges_for_date(doctor, date):
+    """Like slots_for_date(), but (start, end) pairs; end = start + that block's slot length."""
     if not doctor.is_active:
         return []
 
-    slots = set()
+    slots = {}
     for block in doctor.schedules.filter(weekday=date.weekday(), is_active=True):
         step = timedelta(minutes=block.slot_minutes)
         current = datetime.combine(date, block.start_time)
         end = datetime.combine(date, block.end_time)
         while current + step <= end:
-            slots.add(current.time())
+            slots[current.time()] = (current + step).time()
             current += step
-    return sorted(slots)
+    return sorted(slots.items())
 
 
 def doctor_users_without_profile():

@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     "reports",
     "doctors",
     "patients",
+    "appointments",
 ]
 
 MIDDLEWARE = [
@@ -120,6 +121,9 @@ STATICFILES_DIRS = [BASE_DIR / "static"]
 MEDIA_ROOT = BASE_DIR / "media"
 MEDIA_URL = "/media/"
 MAX_UPLOAD_MB = env.int("MAX_UPLOAD_MB", default=5)
+
+# How many days ahead appointments can be booked.
+APPOINTMENT_BOOKING_WINDOW_DAYS = env.int("APPOINTMENT_BOOKING_WINDOW_DAYS", default=60)
 
 # Render sets RENDER=true on its servers.
 ON_RENDER = env.bool("RENDER", default=False)

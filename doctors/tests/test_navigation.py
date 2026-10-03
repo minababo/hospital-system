@@ -4,10 +4,18 @@ from django.urls import reverse
 from accounts.models import Role
 
 EXPECTED_SIDEBAR = {
-    Role.ADMIN: ["Dashboard", "Patients", "Users", "Departments", "Doctors", "Change password"],
-    Role.DOCTOR: ["Dashboard", "Patients", "My profile", "Change password"],
-    Role.NURSE: ["Dashboard", "Patients", "Doctors", "Change password"],
-    Role.RECEPTIONIST: ["Dashboard", "Patients", "Doctors", "Change password"],
+    Role.ADMIN: [
+        "Dashboard",
+        "Patients",
+        "Appointments",
+        "Users",
+        "Departments",
+        "Doctors",
+        "Change password",
+    ],
+    Role.DOCTOR: ["Dashboard", "Patients", "Appointments", "My profile", "Change password"],
+    Role.NURSE: ["Dashboard", "Patients", "Appointments", "Doctors", "Change password"],
+    Role.RECEPTIONIST: ["Dashboard", "Patients", "Appointments", "Doctors", "Change password"],
     Role.LAB_STAFF: ["Dashboard", "Change password"],
     Role.PHARMACIST: ["Dashboard", "Change password"],
     Role.ACCOUNTANT: ["Dashboard", "Change password"],
