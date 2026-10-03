@@ -1,0 +1,11 @@
+<script>
+  // Submit forms marked data-autosubmit as soon as a select or date changes. The forms
+  // still have a submit button, so everything works without JavaScript too.
+  document.querySelectorAll("form[data-autosubmit]").forEach(function (form) {
+    form.addEventListener("change", function (event) {
+      if (event.target.matches("select, input[type=date]")) {
+        form.submit();
+      }
+    });
+  });
+</script>

@@ -1,0 +1,60 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}Appointment calendar{% endblock %}
+
+{% block content %}
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-2xl font-semibold text-slate-900">Calendar</h1>
+    <a href="{% url 'appointments:appointment_list' %}" class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">List view</a>
+  </div>
+
+  <div class="mt-6 flex flex-wrap items-center gap-2 text-sm">
+    <a href="{% querystring week=calendar.prev_week|date:'Y-m-d' %}" class="rounded-md border border-slate-300 bg-white px-3 py-1.5 hover:bg-slate-50">&larr; Previous week</a>
+    <a href="{% querystring week=today|date:'Y-m-d' %}" class="rounded-md border border-slate-300 bg-white px-3 py-1.5 hover:bg-slate-50">This week</a>
+    <a href="{% querystring week=calendar.next_week|date:'Y-m-d' %}" class="rounded-md border border-slate-300 bg-white px-3 py-1.5 hover:bg-slate-50">Next week &rarr;</a>
+    <span class="ml-2 font-medium text-slate-900">Week of {{ calendar.week_start|date:"d M Y" }}</span>
+
+    {% if doctors %}
+      <form method="get" class="ml-auto flex gap-2" data-autosubmit>
+        <input type="hidden" name="week" value="{{ calendar.week_start|date:'Y-m-d' }}">
+        <select name="doctor" aria-label="Doctor">
+          <option value="">All doctors</option>
+          {% for option in doctors %}
+            <option value="{{ option.pk }}" {% if option.pk == doctor.pk %}selected{% endif %}>{{ option }}</option>
+          {% endfor %}
+        </select>
+        <button type="submit" class="rounded-md bg-slate-800 px-3 py-1.5 text-white">Show</button>
+      </form>
+    {% elif doctor %}
+      <span class="ml-auto text-slate-600">{{ doctor }}</span>
+    {% endif %}
+  </div>
+
+  {# Seven columns need room: on phones the grid scrolls sideways inside this box. #}
+  <div class="mt-4 overflow-x-auto">
+    <div class="grid min-w-[56rem] grid-cols-7 gap-2">
+      {% for day in calendar.days %}
+        <section class="min-h-40 rounded-lg border bg-white p-2 shadow-sm {% if day.date == today %}border-slate-800{% else %}border-slate-200{% endif %}">
+          <h2 class="text-xs font-semibold text-slate-500 uppercase">{{ day.date|date:"D" }}</h2>
+          <p class="text-sm font-medium text-slate-900">{{ day.date|date:"d M" }}</p>
+          <ul class="mt-2 space-y-1">
+            {% for appointment in day.appointments %}
+              <li>
+                <a href="{% url 'appointments:appointment_detail' appointment.pk %}" class="block rounded border border-slate-100 p-1.5 text-xs hover:bg-slate-50">
+                  <span class="font-medium">{{ appointment.start_time|time:"H:i" }}</span>
+                  {{ appointment.patient.full_name }}
+                  {% if not doctor %}<span class="block text-slate-500">{{ appointment.doctor }}</span>{% endif %}
+                  <span class="mt-1 block">{% include "appointments/partials/status_badge.html" with status=appointment.status label=appointment.get_status_display %}</span>
+                </a>
+              </li>
+            {% empty %}
+              <li class="text-xs text-slate-400">No appointments</li>
+            {% endfor %}
+          </ul>
+        </section>
+      {% endfor %}
+    </div>
+  </div>
+
+  {% include "appointments/partials/autosubmit.html" %}
+{% endblock %}
