@@ -23,16 +23,12 @@ from appointments.forms import (
     slot_choices,
 )
 from appointments.models import Status
+from appointments.permissions import BOOK_ROLES, CHECKIN_ROLES, COMPLETE_ROLES, VIEW_ROLES
 from common.forms import add_service_errors
 from doctors.models import Doctor
 from doctors.selectors import doctor_list
 from patients.models import Patient
 from patients.selectors import search_patients
-
-VIEW_ROLES = (Role.ADMIN, Role.RECEPTIONIST, Role.NURSE, Role.DOCTOR)
-BOOK_ROLES = (Role.ADMIN, Role.RECEPTIONIST)
-CHECKIN_ROLES = (Role.ADMIN, Role.RECEPTIONIST, Role.NURSE)
-COMPLETE_ROLES = (Role.DOCTOR,)
 
 
 def allowed_actions(appointment, user, now=None):
@@ -49,12 +45,8 @@ def allowed_actions(appointment, user, now=None):
         and user_has_role(user, *CHECKIN_ROLES)
     ):
         actions.add("check_in")
-    if (
-        appointment.can_transition_to(Status.COMPLETED)
-        and user_has_role(user, *COMPLETE_ROLES)
-        and appointment.doctor.user_id == user.pk
-    ):
-        actions.add("complete")
+    # Completing happens by finalizing the consultation record (records app), so there
+    # is no separate "complete" button.
     return actions
 
 
@@ -229,8 +221,31 @@ class AppointmentDetailView(RoleRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["actions"] = allowed_actions(self.object, self.request.user)
+        appointment, user = self.object, self.request.user
+        context["actions"] = allowed_actions(appointment, user)
         context["cancel_form"] = CancelForm()
+
+        # Consultation links. Reverse one-to-one lookups (no import of the records app);
+        # getattr gives None when the record/vitals don't exist yet.
+        record = getattr(appointment, "medical_record", None)
+        is_own_doctor = appointment.doctor.user_id == user.pk
+        checked_in = appointment.status == Status.CHECKED_IN
+        context["record"] = record
+        context["vitals"] = getattr(appointment, "vitals", None)
+        context["can_start_consultation"] = is_own_doctor and record is None and checked_in
+        context["can_open_draft"] = (
+            is_own_doctor and record is not None and record.status == "DRAFT"
+        )
+        context["can_view_record"] = (
+            record is not None
+            and record.status == "FINALIZED"
+            and user.role in (Role.ADMIN, Role.DOCTOR, Role.NURSE)
+        )
+        context["can_record_vitals"] = (
+            checked_in
+            and (user.role == Role.NURSE or is_own_doctor)
+            and (record is None or record.status == "DRAFT")
+        )
         return context
 
 

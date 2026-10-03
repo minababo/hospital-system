@@ -143,9 +143,12 @@ TARGETS = [Status.CHECKED_IN, Status.COMPLETED, Status.CANCELLED, Status.NO_SHOW
 
 @pytest.mark.parametrize("from_status", list(Status))
 @pytest.mark.parametrize("to_status", TARGETS)
-def test_every_transition_pair(make_appointment, from_status, to_status):
+def test_every_transition_pair(make_appointment, make_record, from_status, to_status):
     appointment = make_appointment(status=from_status)
     allowed = to_status in ALLOWED_TRANSITIONS.get(from_status, set())
+    if to_status == Status.COMPLETED:
+        # Completing needs a finalized consultation record.
+        make_record(appointment=appointment, status="FINALIZED")
 
     if allowed:
         change_status(appointment, to_status)
@@ -257,3 +260,16 @@ def test_reschedule_to_taken_slot_rejected(doctor, make_patient, receptionist):
         services.reschedule_appointment(
             appointment, date=MONDAY, start_time=time(10), acting_user=receptionist, now=MONDAY_8AM
         )
+
+
+def test_complete_requires_finalized_record(make_appointment, make_record):
+    appointment = make_appointment(status=Status.CHECKED_IN)
+    doctor_user = appointment.doctor.user
+
+    with pytest.raises(ValidationError, match="Finalize the consultation"):
+        services.complete_appointment(appointment, acting_user=doctor_user, now=AFTER_START)
+
+    make_record(appointment=appointment)  # a DRAFT record is not enough
+    appointment.refresh_from_db()
+    with pytest.raises(ValidationError, match="Finalize the consultation"):
+        services.complete_appointment(appointment, acting_user=doctor_user, now=AFTER_START)

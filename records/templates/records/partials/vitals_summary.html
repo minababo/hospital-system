@@ -1,0 +1,16 @@
+{# Compact vitals display. Expects `vitals` (may be None). #}
+{% if vitals %}
+  <dl class="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+    {% if vitals.bp_systolic %}<div><dt class="text-slate-500">BP</dt><dd class="font-medium">{{ vitals.bp_systolic }}/{{ vitals.bp_diastolic }} mmHg</dd></div>{% endif %}
+    {% if vitals.pulse_bpm %}<div><dt class="text-slate-500">Pulse</dt><dd class="font-medium">{{ vitals.pulse_bpm }} bpm</dd></div>{% endif %}
+    {% if vitals.respiratory_rate %}<div><dt class="text-slate-500">Resp. rate</dt><dd class="font-medium">{{ vitals.respiratory_rate }}/min</dd></div>{% endif %}
+    {% if vitals.spo2_percent %}<div><dt class="text-slate-500">SpO₂</dt><dd class="font-medium">{{ vitals.spo2_percent }}%</dd></div>{% endif %}
+    {% if vitals.temperature_c %}<div><dt class="text-slate-500">Temp.</dt><dd class="font-medium">{{ vitals.temperature_c }} °C</dd></div>{% endif %}
+    {% if vitals.weight_kg %}<div><dt class="text-slate-500">Weight</dt><dd class="font-medium">{{ vitals.weight_kg }} kg</dd></div>{% endif %}
+    {% if vitals.height_cm %}<div><dt class="text-slate-500">Height</dt><dd class="font-medium">{{ vitals.height_cm }} cm</dd></div>{% endif %}
+    {% if vitals.bmi %}<div><dt class="text-slate-500">BMI</dt><dd class="font-medium">{{ vitals.bmi }}</dd></div>{% endif %}
+  </dl>
+  <p class="mt-2 text-xs text-slate-500">Recorded {{ vitals.recorded_at|date:"d M Y H:i" }} by {{ vitals.recorded_by|default:"—" }}</p>
+{% else %}
+  <p class="text-sm text-slate-500">No vitals recorded.</p>
+{% endif %}
