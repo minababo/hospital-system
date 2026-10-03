@@ -46,6 +46,32 @@
     </div>
   </dl>
 
+  <div class="mt-8 flex flex-wrap items-center justify-between gap-3">
+    <h2 class="text-lg font-semibold text-slate-900">Appointments</h2>
+    {% if can_book %}
+      <a href="{% url 'appointments:book' %}?patient={{ patient.pk }}" class="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Book appointment</a>
+    {% endif %}
+  </div>
+  <div class="mt-4 grid gap-4 lg:grid-cols-2">
+    {% for title, items in appointments.items %}
+      <section class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+        <h3 class="text-sm font-semibold text-slate-500 uppercase">{{ title }}</h3>
+        <ul class="mt-2 divide-y divide-slate-100 text-sm">
+          {% for appointment in items|slice:":5" %}
+            <li class="flex items-center justify-between gap-2 py-2">
+              <a href="{% url 'appointments:appointment_detail' appointment.pk %}" class="hover:underline">
+                {{ appointment.date|date:"d M Y" }} {{ appointment.start_time|time:"H:i" }} &middot; {{ appointment.doctor }}
+              </a>
+              {% include "appointments/partials/status_badge.html" with status=appointment.status label=appointment.get_status_display %}
+            </li>
+          {% empty %}
+            <li class="py-2 text-slate-500">None</li>
+          {% endfor %}
+        </ul>
+      </section>
+    {% endfor %}
+  </div>
+
   <h2 class="mt-8 text-lg font-semibold text-slate-900">Documents</h2>
 
   <div class="mt-4 overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
