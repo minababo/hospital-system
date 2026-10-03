@@ -1,0 +1,34 @@
+{% extends "print/base.html" %}
+{% load money %}
+
+{% block title %}Invoice {{ invoice.number }}{% endblock %}
+{% block heading %}Invoice {{ invoice.number }} &middot; {{ invoice.get_status_display }}{% endblock %}
+
+{% block content %}
+  {% if invoice.status == "VOID" %}<p class="allergy">VOID: {{ invoice.void_reason }}</p>{% endif %}
+  <p>
+    <strong>{{ invoice.patient.full_name }}</strong> ({{ invoice.patient.mrn }})<br>
+    <span class="muted">Date:</span> {{ invoice.issued_at|default:invoice.created_at|date:"d M Y" }}
+  </p>
+
+  <table>
+    <tr><th>Description</th><th class="num">Qty</th><th class="num">Unit price</th><th class="num">Amount</th></tr>
+    {% for charge in charges %}
+      <tr><td>{{ charge.description }}</td><td class="num">{{ charge.quantity }}</td><td class="num">{{ charge.unit_price|rupees }}</td><td class="num">{{ charge.amount|rupees }}</td></tr>
+    {% endfor %}
+    <tr><td colspan="3" class="num">Subtotal</td><td class="num">{{ invoice.subtotal|rupees }}</td></tr>
+    {% if invoice.discount %}<tr><td colspan="3" class="num">Discount ({{ invoice.discount_reason }})</td><td class="num">&minus; {{ invoice.discount|rupees }}</td></tr>{% endif %}
+    <tr><th colspan="3" class="num">Total</th><th class="num">{{ invoice.total|rupees }}</th></tr>
+    <tr><td colspan="3" class="num">Paid</td><td class="num">{{ invoice.amount_paid|rupees }}</td></tr>
+    <tr><th colspan="3" class="num">Balance due</th><th class="num">{{ invoice.balance|rupees }}</th></tr>
+  </table>
+
+  {% if payments %}
+    <h2>Payments</h2>
+    <table>
+      {% for payment in payments %}
+        <tr><td>{{ payment.receipt_number }}</td><td>{{ payment.received_at|date:"d M Y H:i" }}</td><td>{{ payment.get_method_display }}</td><td class="num">{{ payment.amount|rupees }}</td></tr>
+      {% endfor %}
+    </table>
+  {% endif %}
+{% endblock %}

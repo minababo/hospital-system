@@ -1,0 +1,7 @@
+{# One place for invoice status colours. Expects `status` and `label`. #}
+<span class="inline-block rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap
+  {% if status == 'DRAFT' %}bg-slate-100 text-slate-700
+  {% elif status == 'ISSUED' %}bg-blue-50 text-blue-700
+  {% elif status == 'PARTIALLY_PAID' %}bg-amber-50 text-amber-800
+  {% elif status == 'PAID' %}bg-green-50 text-green-700
+  {% elif status == 'VOID' %}bg-red-50 text-red-700 line-through{% endif %}">{{ label }}</span>

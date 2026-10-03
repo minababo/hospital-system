@@ -1,0 +1,26 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}Bill a patient{% endblock %}
+
+{% block content %}
+  <a href="{% url 'billing:invoice_list' %}" class="text-sm text-slate-600 hover:text-slate-900">&larr; Back to invoices</a>
+  <h1 class="mt-2 text-2xl font-semibold text-slate-900">Bill a patient</h1>
+
+  <form method="get" class="mt-6 flex flex-wrap gap-2">
+    <input type="search" name="q" value="{{ q }}" placeholder="Name, MRN, NIC or phone" class="sm:max-w-md" autofocus>
+    <button type="submit" class="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Search</button>
+  </form>
+
+  {% if q %}
+    <ul class="mt-6 max-w-3xl divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white shadow-sm">
+      {% for patient in patients %}
+        <li class="flex items-center justify-between gap-3 px-4 py-3 text-sm">
+          <span>{{ patient.full_name }} <span class="font-mono text-xs text-slate-500">{{ patient.mrn }}</span> &middot; {{ patient.phone }}</span>
+          <a href="{% url 'billing:patient_billing' patient.pk %}" class="rounded-md border border-slate-300 px-3 py-1 text-slate-700 hover:bg-slate-50">Open billing</a>
+        </li>
+      {% empty %}
+        <li class="px-4 py-3 text-sm text-slate-500">No patients match "{{ q }}".</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+{% endblock %}
