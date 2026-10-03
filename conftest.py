@@ -6,11 +6,14 @@ from decimal import Decimal
 import pytest
 from django.conf import settings as django_settings
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.utils import timezone
 
 from accounts.models import Role, User
-from appointments.models import Appointment
+from appointments.models import Appointment, Status
 from doctors.models import Department, Doctor, DoctorSchedule
 from patients.models import Patient
+from pharmacy.models import Medicine
+from records.models import MedicalRecord, RecordStatus
 
 
 @pytest.fixture(autouse=True)
@@ -151,6 +154,52 @@ def make_appointment(make_patient, make_doctor):
         return Appointment.objects.create(**kwargs)
 
     return _make_appointment
+
+
+@pytest.fixture
+def make_checked_in_appointment(make_appointment):
+    """A CHECKED_IN appointment for today (real date), ready for a consultation."""
+
+    def _make_checked_in_appointment(**kwargs):
+        kwargs.setdefault("date", timezone.localdate())
+        kwargs.setdefault("status", Status.CHECKED_IN)
+        kwargs.setdefault("checked_in_at", timezone.now())
+        return make_appointment(**kwargs)
+
+    return _make_checked_in_appointment
+
+
+@pytest.fixture
+def make_record(make_checked_in_appointment):
+    """A MedicalRecord (DRAFT by default) created directly, without service checks."""
+
+    def _make_record(appointment=None, status=RecordStatus.DRAFT, **kwargs):
+        appointment = appointment or make_checked_in_appointment()
+        kwargs.setdefault("presenting_complaint", appointment.reason)
+        if status == RecordStatus.FINALIZED:
+            kwargs.setdefault("finalized_at", timezone.now())
+        return MedicalRecord.objects.create(
+            appointment=appointment,
+            patient=appointment.patient,
+            doctor=appointment.doctor,
+            status=status,
+            **kwargs,
+        )
+
+    return _make_record
+
+
+@pytest.fixture
+def make_medicine(db):
+    counter = itertools.count(1)
+
+    def _make_medicine(**kwargs):
+        kwargs.setdefault("name", f"Medicine {next(counter)}")
+        kwargs.setdefault("strength", "500 mg")
+        kwargs.setdefault("form", Medicine.Form.TABLET)
+        return Medicine.objects.create(**kwargs)
+
+    return _make_medicine
 
 
 # Smallest byte strings that pass the file-type checks in common/validators.py.
