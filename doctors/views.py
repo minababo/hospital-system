@@ -337,6 +337,10 @@ class ScheduleDeleteView(ManageMixin, View):
     def post(self, request, pk):
         schedule = get_object_or_404(DoctorSchedule, pk=pk)
         doctor_pk = schedule.doctor_id
-        services.delete_schedule(schedule, acting_user=request.user)
-        messages.success(request, "Schedule block was deleted.")
+        try:
+            services.delete_schedule(schedule, acting_user=request.user)
+        except ValidationError as error:
+            messages.error(request, " ".join(error.messages))
+        else:
+            messages.success(request, "Schedule block was deleted.")
         return redirect("doctors:doctor_detail", pk=doctor_pk)
