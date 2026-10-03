@@ -1,0 +1,6 @@
+from accounts.models import Role
+
+VIEW_ROLES = (Role.ADMIN, Role.RECEPTIONIST, Role.NURSE, Role.DOCTOR)
+BOOK_ROLES = (Role.ADMIN, Role.RECEPTIONIST)
+CHECKIN_ROLES = (Role.ADMIN, Role.RECEPTIONIST, Role.NURSE)
+COMPLETE_ROLES = (Role.DOCTOR,)
