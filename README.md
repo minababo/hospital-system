@@ -117,6 +117,37 @@ same date and time. If two people book the same slot at the same moment, the sec
 friendly "slot was just booked" message instead of an error page. Doctor schedules can't be
 changed in a way that leaves upcoming appointments outside working hours.
 
+## Medical records
+
+Workflow for a visit:
+
+1. Receptionist/nurse checks the patient in; a nurse (or the doctor) records **vitals**.
+2. The appointment's doctor clicks **Start consultation**. This creates a draft record,
+   pre-filled with the reason for the visit.
+3. In the draft the doctor writes notes, adds **diagnoses** (exactly one primary, optional
+   ICD-10 code), adds **prescription items** and can upload **reports**.
+4. **Finalize consultation** locks the record, issues the prescription and completes the
+   appointment in one step. An appointment can't be completed without a finalized record.
+5. After finalizing, nothing can be edited. Corrections and late results are added as
+   **addenda**, and reports can still be attached.
+
+If a medicine's name or generic name appears as a whole word in the patient's allergy notes,
+adding it is blocked until the doctor ticks an override. The override is saved on the item.
+
+| Page | Who |
+|------|-----|
+| Draft consultation (edit) | The appointment's own doctor only |
+| Finalized record, treatment history, print summary/prescription | Admin, Doctor, Nurse |
+| Record vitals | Nurse, the appointment's doctor |
+| Addenda, cancel an issued prescription | The record's own doctor |
+| Medicine catalog (`/pharmacy/medicines/`) | Admin, Pharmacist |
+
+**Prescriptions (for the pharmacy module).** One prescription per consultation; each item has
+a catalog medicine, dose, frequency (OD, BD, TDS, …), route, duration in days and the quantity to
+dispense. Statuses: `DRAFT` (record not finalized) → `ISSUED` (ready to dispense) →
+`PARTIALLY_DISPENSED` / `DISPENSED` (set by pharmacy), or `CANCELLED` by the doctor while still
+issued.
+
 ## File storage
 
 Patient documents (PDF, JPG, PNG up to `MAX_UPLOAD_MB`) are stored in a **private** Supabase

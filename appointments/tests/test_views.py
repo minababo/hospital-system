@@ -273,7 +273,7 @@ def test_cancel_without_reason_shows_error(client_for_role, appointment):
 
 
 def test_check_in_and_complete_today(
-    client_for_role, client, make_appointment, make_scheduled_doctor
+    client_for_role, client, make_appointment, make_scheduled_doctor, make_record
 ):
     doctor = make_scheduled_doctor(start=time(0), end=time(23, 45))
     appointment = make_appointment(
@@ -284,6 +284,7 @@ def test_check_in_and_complete_today(
     appointment.refresh_from_db()
     assert appointment.status == Status.CHECKED_IN
 
+    make_record(appointment=appointment, status="FINALIZED")
     client.force_login(doctor.user)
     client.post(reverse("appointments:complete", args=[appointment.pk]))
     appointment.refresh_from_db()

@@ -11,13 +11,14 @@ EXPECTED_SIDEBAR = {
         "Users",
         "Departments",
         "Doctors",
+        "Medicines",
         "Change password",
     ],
     Role.DOCTOR: ["Dashboard", "Patients", "Appointments", "My profile", "Change password"],
     Role.NURSE: ["Dashboard", "Patients", "Appointments", "Doctors", "Change password"],
     Role.RECEPTIONIST: ["Dashboard", "Patients", "Appointments", "Doctors", "Change password"],
     Role.LAB_STAFF: ["Dashboard", "Change password"],
-    Role.PHARMACIST: ["Dashboard", "Change password"],
+    Role.PHARMACIST: ["Dashboard", "Medicines", "Change password"],
     Role.ACCOUNTANT: ["Dashboard", "Change password"],
 }
 

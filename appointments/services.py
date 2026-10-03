@@ -145,6 +145,12 @@ def complete_appointment(appointment, *, acting_user, now=None):
     if appointment.doctor.user_id != acting_user.pk:
         raise PermissionDenied("Only the appointment's own doctor can complete it.")
     _transition(appointment, Status.COMPLETED)
+    # A visit is only complete once the doctor has finalized its medical record.
+    # Reverse one-to-one access (no import of the records app); getattr returns None
+    # when no record exists, because the "does not exist" error is an AttributeError.
+    record = getattr(appointment, "medical_record", None)
+    if record is None or record.status != "FINALIZED":
+        raise ValidationError("Finalize the consultation record before completing the appointment.")
     appointment.status = Status.COMPLETED
     appointment.completed_at = now or timezone.now()
     appointment.completed_by = acting_user

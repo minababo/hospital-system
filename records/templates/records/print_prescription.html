@@ -1,0 +1,34 @@
+{% extends "records/print_base.html" %}
+
+{% block title %}Prescription{% endblock %}
+{% block heading %}Prescription &middot; {{ prescription.issued_at|date:"d M Y"|default:record.appointment.date }}{% endblock %}
+
+{% block content %}
+  {% if prescription.status == "CANCELLED" %}<p class="allergy">CANCELLED: {{ prescription.cancel_reason }}</p>{% endif %}
+  <p>
+    <strong>{{ record.patient.full_name }}</strong> ({{ record.patient.mrn }}) &middot;
+    {{ record.patient.age }} years &middot; {{ record.patient.get_gender_display }}
+  </p>
+  {% if record.patient.allergies %}<p class="allergy">Allergies: {{ record.patient.allergies }}</p>{% endif %}
+
+  <table>
+    <tr><th>Medicine</th><th>Dose</th><th>Frequency</th><th>Route</th><th>Days</th><th>Qty</th><th>Instructions</th></tr>
+    {% for item in prescription.items.all %}
+      <tr>
+        <td>{{ item.medicine }}</td>
+        <td>{{ item.dose }}</td>
+        <td>{{ item.get_frequency_display }}</td>
+        <td>{{ item.get_route_display }}</td>
+        <td>{{ item.duration_days }}</td>
+        <td>{{ item.quantity }}</td>
+        <td>{{ item.instructions }}</td>
+      </tr>
+    {% endfor %}
+  </table>
+
+  <p style="margin-top: 3rem;">
+    ______________________________<br>
+    {{ record.doctor }}<br>
+    <span class="muted">SLMC {{ record.doctor.registration_number }} &middot; {{ record.doctor.department.name }}</span>
+  </p>
+{% endblock %}
