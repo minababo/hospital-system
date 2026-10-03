@@ -18,6 +18,9 @@ from patients.forms import DocumentUploadForm, PatientForm
 from patients.models import Patient
 from records.permissions import VIEW_RECORDS
 
+# Same as billing.permissions.VIEW_BILLING. Copied, not imported, because the patients
+# app must not depend on billing (a test in billing checks they stay equal).
+BILLING_VIEW_ROLES = (Role.ADMIN, Role.ACCOUNTANT, Role.RECEPTIONIST)
 EDIT_ROLES = (Role.ADMIN, Role.RECEPTIONIST)
 VIEW_ROLES = (Role.ADMIN, Role.RECEPTIONIST, Role.DOCTOR, Role.NURSE)
 HISTORY_ROLES = (Role.ADMIN, Role.DOCTOR, Role.NURSE)
@@ -95,6 +98,7 @@ class PatientDetailView(RoleRequiredMixin, DetailView):
         context["appointments"] = patient_appointments(self.object)
         context["can_book"] = user_has_role(user, *BOOK_ROLES)
         context["can_view_treatment"] = user_has_role(user, *VIEW_RECORDS)
+        context["can_view_billing"] = user_has_role(user, *BILLING_VIEW_ROLES)
         return context
 
 

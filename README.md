@@ -148,6 +148,37 @@ dispense. Statuses: `DRAFT` (record not finalized) → `ISSUED` (ready to dispen
 `PARTIALLY_DISPENSED` / `DISPENSED` (set by pharmacy), or `CANCELLED` by the doctor while still
 issued.
 
+## Billing
+
+Everything billable is a **charge**: consultation, laboratory, pharmacy, admission or other.
+Charges start as *unbilled*; a cashier groups them into an **invoice**, issues it and records
+**payments**. Totals (subtotal, total, paid, balance) are always calculated from the charges and
+payments, never stored separately.
+
+- Completed consultations are billed automatically at the fee agreed when the appointment was
+  booked. They are picked up when an invoice is created.
+- Other modules (laboratory, pharmacy, admissions) bill through one function,
+  `billing.services.post_charge(..., source_type="lab_order", source_id=12)`. Calling it twice
+  for the same source returns the existing charge, so nothing is billed twice.
+
+| Invoice status | Meaning |
+|----------------|---------|
+| Draft | Being prepared; charges and discount can change |
+| Issued | Final; waiting for payment |
+| Partially paid / Paid | Updated automatically from payments |
+| Void | Cancelled by the admin; its charges become unbilled again |
+
+| Action | Who |
+|--------|-----|
+| View invoices, patient billing, print invoice and receipts | Admin, Accountant, Receptionist |
+| Add charges, create and issue invoices, receive payments | Accountant, Receptionist (cashiers) |
+| Edit draft invoices (remove charges, discounts) | Accountant |
+| Void an unbilled charge | Accountant, Admin |
+| Void invoices and payments | Admin only |
+
+**Separation of duties:** the people who take money can't undo it. Voiding a payment or invoice
+needs the admin, and every void records who did it, when and why.
+
 ## File storage
 
 Patient documents (PDF, JPG, PNG up to `MAX_UPLOAD_MB`) are stored in a **private** Supabase

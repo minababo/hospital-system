@@ -1,0 +1,21 @@
+{% extends "print/base.html" %}
+{% load money %}
+
+{% block title %}Receipt {{ payment.receipt_number }}{% endblock %}
+{% block heading %}Payment receipt{% endblock %}
+
+{% block content %}
+  {% if payment.is_voided %}<p class="allergy">VOIDED: {{ payment.void_reason }}</p>{% endif %}
+  <table>
+    <tr><th>Receipt no.</th><td>{{ payment.receipt_number }}</td></tr>
+    <tr><th>Date and time</th><td>{{ payment.received_at|date:"d M Y H:i" }}</td></tr>
+    <tr><th>Patient</th><td>{{ invoice.patient.full_name }} ({{ invoice.patient.mrn }})</td></tr>
+    <tr><th>Invoice no.</th><td>{{ invoice.number }}</td></tr>
+    <tr><th>Amount received</th><td><strong>{{ payment.amount|rupees }}</strong></td></tr>
+    <tr><th>Method</th><td>{{ payment.get_method_display }}</td></tr>
+    {% if payment.reference %}<tr><th>Reference</th><td>{{ payment.reference }}</td></tr>{% endif %}
+    <tr><th>Received by</th><td>{{ payment.received_by }}</td></tr>
+    <tr><th>Balance after this payment</th><td>{{ balance_after|rupees }}</td></tr>
+  </table>
+  <p class="muted" style="margin-top: 2rem;">Thank you.</p>
+{% endblock %}

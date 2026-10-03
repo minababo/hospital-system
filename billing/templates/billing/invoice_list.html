@@ -1,0 +1,56 @@
+{% extends "layouts/app.html" %}
+{% load money %}
+
+{% block title %}Billing{% endblock %}
+
+{% block content %}
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-2xl font-semibold text-slate-900">Invoices</h1>
+    <a href="{% url 'billing:patient_search' %}" class="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Bill a patient</a>
+  </div>
+
+  <form method="get" class="mt-6 grid gap-3 sm:grid-cols-6">
+    <input type="search" name="q" value="{{ filter_form.q.value|default:'' }}" placeholder="Invoice no., patient name or MRN" class="sm:col-span-2">
+    {{ filter_form.status }}
+    {{ filter_form.date_from }}
+    {{ filter_form.date_to }}
+    <label class="flex items-center gap-2 text-sm">{{ filter_form.outstanding_only }} Outstanding only</label>
+    <div class="flex gap-2 sm:col-span-6">
+      <button type="submit" class="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Filter</button>
+      <a href="{% url 'billing:invoice_list' %}" class="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">Clear</a>
+    </div>
+  </form>
+
+  <div class="mt-6 overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
+    <table class="min-w-full divide-y divide-slate-200 text-sm">
+      <thead class="bg-slate-50 text-left text-xs font-semibold tracking-wide text-slate-500 uppercase">
+        <tr>
+          <th class="px-4 py-3">Invoice</th>
+          <th class="px-4 py-3">Patient</th>
+          <th class="px-4 py-3">Date</th>
+          <th class="px-4 py-3 text-right">Total</th>
+          <th class="px-4 py-3 text-right">Paid</th>
+          <th class="px-4 py-3 text-right">Balance</th>
+          <th class="px-4 py-3">Status</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for invoice in invoices %}
+          <tr>
+            <td class="px-4 py-3 font-mono"><a href="{% url 'billing:invoice_detail' invoice.pk %}" class="hover:underline">{{ invoice.number }}</a></td>
+            <td class="px-4 py-3">{{ invoice.patient.full_name }} <span class="font-mono text-xs text-slate-500">{{ invoice.patient.mrn }}</span></td>
+            <td class="px-4 py-3 whitespace-nowrap">{{ invoice.created_at|date:"d M Y" }}</td>
+            <td class="px-4 py-3 text-right whitespace-nowrap">{{ invoice.total_amount|rupees }}</td>
+            <td class="px-4 py-3 text-right whitespace-nowrap">{{ invoice.paid_amount|rupees }}</td>
+            <td class="px-4 py-3 text-right font-medium whitespace-nowrap">{{ invoice.balance_amount|rupees }}</td>
+            <td class="px-4 py-3">{% include "billing/partials/invoice_status.html" with status=invoice.status label=invoice.get_status_display %}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="7" class="px-4 py-6 text-center text-slate-500">No invoices found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% include "partials/pagination.html" %}
+{% endblock %}
