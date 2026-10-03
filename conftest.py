@@ -9,7 +9,9 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils import timezone
 
 from accounts.models import Role, User
+from appointments import services as appointment_services
 from appointments.models import Appointment, Status
+from billing.models import Charge, ChargeType, Invoice
 from doctors.models import Department, Doctor, DoctorSchedule
 from patients.models import Patient
 from pharmacy.models import Medicine
@@ -200,6 +202,53 @@ def make_medicine(db):
         return Medicine.objects.create(**kwargs)
 
     return _make_medicine
+
+
+@pytest.fixture
+def make_completed_appointment(make_checked_in_appointment, make_record):
+    """A COMPLETED appointment reached the real way: finalized record, then complete."""
+
+    def _make_completed_appointment(**kwargs):
+        appointment = make_checked_in_appointment(**kwargs)
+        make_record(appointment=appointment, status=RecordStatus.FINALIZED)
+        return appointment_services.complete_appointment(
+            appointment, acting_user=appointment.doctor.user
+        )
+
+    return _make_completed_appointment
+
+
+@pytest.fixture
+def make_charge(make_patient):
+    """An unbilled charge created directly. amount is quantity x unit_price."""
+
+    def _make_charge(**kwargs):
+        if "patient" not in kwargs:
+            kwargs["patient"] = make_patient()
+        kwargs.setdefault("charge_type", ChargeType.OTHER)
+        kwargs.setdefault("description", "Test charge")
+        kwargs.setdefault("quantity", 1)
+        kwargs["unit_price"] = Decimal(str(kwargs.get("unit_price", "1000.00")))
+        kwargs.setdefault(
+            "amount", (kwargs["quantity"] * kwargs["unit_price"]).quantize(Decimal("0.01"))
+        )
+        return Charge.objects.create(**kwargs)
+
+    return _make_charge
+
+
+@pytest.fixture
+def make_invoice(make_patient, make_charge):
+    """An invoice (DRAFT by default) with one charge per amount in `amounts`."""
+
+    def _make_invoice(patient=None, amounts=("1000.00",), **kwargs):
+        patient = patient or make_patient()
+        invoice = Invoice.objects.create(patient=patient, **kwargs)
+        for amount in amounts:
+            make_charge(patient=patient, unit_price=amount, invoice=invoice)
+        return invoice
+
+    return _make_invoice
 
 
 # Smallest byte strings that pass the file-type checks in common/validators.py.
