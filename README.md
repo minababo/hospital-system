@@ -179,6 +179,34 @@ payments, never stored separately.
 **Separation of duties:** the people who take money can't undo it. Voiding a payment or invoice
 needs the admin, and every void records who did it, when and why.
 
+## Laboratory
+
+Workflow:
+
+1. **Request.** The doctor ticks tests in the consultation page's Laboratory section. Walk-in
+   patients are requested by reception or lab staff with an external referrer.
+2. **Billing at request time.** Each test is posted as a laboratory charge (catalog price at
+   that moment). Cancelling an order voids its unpaid charges; if a charge is already on an
+   issued invoice, the order can't be cancelled until that invoice is dealt with.
+3. **Sample collection** (lab staff) → **result entry** per test (one box per parameter) →
+   **release**. Release needs every parameter filled in; released results can't be edited.
+4. **Report.** A printable report is available once results are released; lab staff can also
+   upload scanned or machine reports (stored as patient documents).
+
+**Flags:** numeric results are compared with the parameter's reference range: **L** (below),
+**H** (above) or normal. Values exactly on a limit are normal. The unit and range are copied
+onto each result when it's entered, so later catalog changes never alter a released report.
+
+| Action | Who |
+|--------|-----|
+| Test catalog (tests, parameters, prices) | Admin, Lab Staff |
+| Request tests from a consultation | The consultation's doctor |
+| Walk-in requests | Receptionist, Lab Staff |
+| Worklist and order details | Admin, Doctor, Nurse, Lab Staff |
+| Collect sample, enter and release results, upload reports | Lab Staff |
+| Cancel an open order | Lab Staff, or the ordering doctor |
+| Print released reports | Admin, Doctor, Nurse, Lab Staff, Receptionist |
+
 ## File storage
 
 Patient documents (PDF, JPG, PNG up to `MAX_UPLOAD_MB`) are stored in a **private** Supabase
