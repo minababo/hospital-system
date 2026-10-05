@@ -13,6 +13,7 @@ urlpatterns = [
     path("records/", include("records.urls")),
     path("pharmacy/", include("pharmacy.urls")),
     path("billing/", include("billing.urls")),
+    path("laboratory/", include("laboratory.urls")),
     path("", include("reports.urls")),
     path("", views.home, name="home"),
 ]

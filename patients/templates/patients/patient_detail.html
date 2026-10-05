@@ -10,6 +10,9 @@
       <p class="font-mono text-sm text-slate-500">{{ patient.mrn }}</p>
     </div>
     <div class="flex gap-2">
+      {% if can_view_lab %}
+        <a href="{% url 'laboratory:worklist' %}?patient={{ patient.pk }}&status=ALL" class="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">Lab orders</a>
+      {% endif %}
       {% if can_view_billing %}
         <a href="{% url 'billing:patient_billing' patient.pk %}" class="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">Billing</a>
       {% endif %}
