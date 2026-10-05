@@ -13,6 +13,7 @@ from appointments import services as appointment_services
 from appointments.models import Appointment, Status
 from billing.models import Charge, ChargeType, Invoice
 from doctors.models import Department, Doctor, DoctorSchedule
+from laboratory.models import LabOrder, LabOrderItem, LabTest, LabTestParameter
 from patients.models import Patient
 from pharmacy.models import Medicine
 from records.models import MedicalRecord, RecordStatus
@@ -249,6 +250,53 @@ def make_invoice(make_patient, make_charge):
         return invoice
 
     return _make_invoice
+
+
+HAEMOGLOBIN = {"name": "Haemoglobin", "unit": "g/dL", "ref_low": "12", "ref_high": "16"}
+
+
+@pytest.fixture
+def make_lab_test(db):
+    """A lab test with parameters (dicts of LabTestParameter fields). Default: one
+    numeric parameter, Haemoglobin 12-16 g/dL. Pass parameters=[] for none."""
+    counter = itertools.count(1)
+
+    def _make_lab_test(parameters=None, **kwargs):
+        n = next(counter)
+        kwargs.setdefault("code", f"T{n:03d}")
+        kwargs.setdefault("name", f"Test {n}")
+        kwargs.setdefault("section", "HAEMATOLOGY")
+        kwargs.setdefault("specimen_type", "BLOOD")
+        kwargs.setdefault("price", Decimal("1200.00"))
+        test = LabTest.objects.create(**kwargs)
+        for order, data in enumerate(parameters if parameters is not None else [HAEMOGLOBIN]):
+            data = dict(data)
+            for bound in ("ref_low", "ref_high"):
+                if data.get(bound) is not None:
+                    data[bound] = Decimal(str(data[bound]))
+            LabTestParameter.objects.create(test=test, display_order=order, **data)
+        return test
+
+    return _make_lab_test
+
+
+@pytest.fixture
+def make_lab_order(make_patient, make_lab_test):
+    """A lab order created directly (no billing). With record= it is a consultation
+    order; otherwise a walk-in referred by "Dr. External"."""
+
+    def _make_lab_order(record=None, tests=None, **kwargs):
+        if record is not None:
+            kwargs.update(record=record, patient=record.patient, ordering_doctor=record.doctor)
+        else:
+            kwargs.setdefault("patient", make_patient())
+            kwargs.setdefault("referred_by", "Dr. External")
+        order = LabOrder.objects.create(**kwargs)
+        for test in tests if tests is not None else [make_lab_test()]:
+            LabOrderItem.objects.create(order=order, test=test, price=test.price)
+        return order
+
+    return _make_lab_order
 
 
 # Smallest byte strings that pass the file-type checks in common/validators.py.
