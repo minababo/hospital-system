@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 import pytest
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
@@ -98,11 +100,19 @@ def test_toggle_rejects_get(client_for_role, make_medicine):
 def test_create_via_view(client_for_role):
     response = client_for_role(Role.PHARMACIST).post(
         reverse("pharmacy:medicine_create"),
-        {"name": "Cetirizine", "strength": "10 mg", "form": "TABLET", "generic_name": ""},
+        {
+            "name": "Cetirizine",
+            "strength": "10 mg",
+            "form": "TABLET",
+            "generic_name": "",
+            "unit_price": "12.50",
+            "reorder_level": 20,
+        },
     )
 
     assert response.status_code == 302
-    assert Medicine.objects.filter(name="Cetirizine").exists()
+    medicine = Medicine.objects.get(name="Cetirizine")
+    assert (medicine.unit_price, medicine.reorder_level) == (Decimal("12.50"), 20)
 
 
 @pytest.mark.parametrize("role", list(Role))

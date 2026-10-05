@@ -15,8 +15,8 @@ from billing.models import Charge, ChargeType, Invoice
 from doctors.models import Department, Doctor, DoctorSchedule
 from laboratory.models import LabOrder, LabOrderItem, LabTest, LabTestParameter
 from patients.models import Patient
-from pharmacy.models import Medicine
-from records.models import MedicalRecord, RecordStatus
+from pharmacy.models import Medicine, MovementType, StockBatch, StockMovement
+from records.models import MedicalRecord, Prescription, PrescriptionItem, RecordStatus
 
 
 @pytest.fixture(autouse=True)
@@ -297,6 +297,60 @@ def make_lab_order(make_patient, make_lab_test):
         return order
 
     return _make_lab_order
+
+
+@pytest.fixture
+def make_batch(make_medicine, make_user):
+    """A stock batch with a matching RECEIVE movement (so the ledger adds up).
+    Created directly, so expired batches are possible; expiry defaults to a year ahead."""
+    counter = itertools.count(1)
+
+    def _make_batch(medicine=None, qty=100, expiry=None, batch_number=None, **kwargs):
+        medicine = medicine or make_medicine()
+        user = kwargs.pop("received_by", None) or make_user(role=Role.PHARMACIST)
+        batch = StockBatch.objects.create(
+            medicine=medicine,
+            batch_number=batch_number or f"B{next(counter):04d}",
+            expiry_date=expiry or timezone.localdate() + timedelta(days=365),
+            quantity_received=qty,
+            quantity_on_hand=qty,
+            received_by=user,
+            **kwargs,
+        )
+        StockMovement.objects.create(
+            batch=batch, movement_type=MovementType.RECEIVE, quantity=qty, created_by=user
+        )
+        return batch
+
+    return _make_batch
+
+
+@pytest.fixture
+def make_issued_prescription(make_record, make_medicine):
+    """An ISSUED prescription on a finalized record. items = [(medicine, quantity), ...];
+    default: one medicine at Rs. 10 per unit, quantity 10."""
+
+    def _make_issued_prescription(items=None, record=None):
+        record = record or make_record(status=RecordStatus.FINALIZED)
+        prescription = Prescription.objects.create(
+            record=record,
+            patient=record.patient,
+            doctor=record.doctor,
+            status="ISSUED",
+            issued_at=timezone.now(),
+        )
+        for medicine, quantity in items or [(make_medicine(unit_price=Decimal("10.00")), 10)]:
+            PrescriptionItem.objects.create(
+                prescription=prescription,
+                medicine=medicine,
+                dose="1 tablet",
+                frequency="BD",
+                duration_days=5,
+                quantity=quantity,
+            )
+        return prescription
+
+    return _make_issued_prescription
 
 
 # Smallest byte strings that pass the file-type checks in common/validators.py.

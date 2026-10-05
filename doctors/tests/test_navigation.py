@@ -14,6 +14,8 @@ EXPECTED_SIDEBAR = {
         "Departments",
         "Doctors",
         "Medicines",
+        "Inventory",
+        "Stock alerts",
         "Lab tests",
         "Change password",
     ],
@@ -43,7 +45,14 @@ EXPECTED_SIDEBAR = {
         "Change password",
     ],
     Role.LAB_STAFF: ["Dashboard", "Lab worklist", "Lab tests", "Change password"],
-    Role.PHARMACIST: ["Dashboard", "Medicines", "Change password"],
+    Role.PHARMACIST: [
+        "Dashboard",
+        "Prescriptions",
+        "Inventory",
+        "Stock alerts",
+        "Medicines",
+        "Change password",
+    ],
     Role.ACCOUNTANT: ["Dashboard", "Billing", "Change password"],
 }
 

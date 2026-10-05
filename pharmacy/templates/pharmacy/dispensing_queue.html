@@ -1,0 +1,40 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}Prescriptions{% endblock %}
+
+{% block content %}
+  <h1 class="text-2xl font-semibold text-slate-900">Prescriptions to dispense</h1>
+
+  <form method="get" class="mt-6 grid gap-3 sm:grid-cols-4">
+    <input type="search" name="q" value="{{ filter_form.q.value|default:'' }}" placeholder="Patient name, MRN, NIC or phone" class="sm:col-span-2">
+    {{ filter_form.status }}
+    <div class="flex gap-2">
+      <button type="submit" class="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Filter</button>
+      <a href="{% url 'pharmacy:dispensing_queue' %}" class="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">Clear</a>
+    </div>
+  </form>
+
+  <div class="mt-6 overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
+    <table class="min-w-full divide-y divide-slate-200 text-sm">
+      <thead class="bg-slate-50 text-left text-xs font-semibold tracking-wide text-slate-500 uppercase">
+        <tr><th class="px-4 py-3">Patient</th><th class="px-4 py-3">Doctor</th><th class="px-4 py-3">Issued</th><th class="px-4 py-3">Items</th><th class="px-4 py-3">Status</th><th></th></tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for prescription in prescriptions %}
+          <tr>
+            <td class="px-4 py-3">{{ prescription.patient.full_name }} <span class="font-mono text-xs text-slate-500">{{ prescription.patient.mrn }}</span></td>
+            <td class="px-4 py-3">{{ prescription.doctor }}</td>
+            <td class="px-4 py-3 whitespace-nowrap">{{ prescription.issued_at|date:"d M Y H:i" }}</td>
+            <td class="px-4 py-3">{{ prescription.item_count }}</td>
+            <td class="px-4 py-3">{% include "records/partials/prescription_status.html" %}</td>
+            <td class="px-4 py-3 text-right"><a href="{% url 'pharmacy:dispense_page' prescription.pk %}" class="rounded-md border border-slate-300 px-3 py-1 text-slate-700 hover:bg-slate-50">Open</a></td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="px-4 py-6 text-center text-slate-500">No prescriptions waiting.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% include "partials/pagination.html" %}
+{% endblock %}

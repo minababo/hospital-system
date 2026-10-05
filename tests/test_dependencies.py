@@ -26,3 +26,29 @@ def test_app_does_not_import(app, forbidden):
     ]
 
     assert offenders == []
+
+
+# Layering inside the pharmacy app: catalog and stock code must not depend on records;
+# only the dispensing modules connect pharmacy to records and billing.
+FILE_RULES = [
+    ("pharmacy/models.py", r"records"),
+    ("pharmacy/selectors.py", r"records"),
+    ("pharmacy/services.py", r"records"),
+    ("records/**/*.py", r"pharmacy\.(dispensing|dispensing_selectors)"),
+]
+
+
+@pytest.mark.parametrize(("pattern_glob", "forbidden"), FILE_RULES)
+def test_file_does_not_import(pattern_glob, forbidden):
+    pattern = re.compile(
+        rf"^\s*(from\s+{forbidden}\b|import\s+{forbidden}\b|from\s+pharmacy\s+import\s+"
+        rf"(dispensing|dispensing_selectors)\b)",
+        re.MULTILINE,
+    )
+    offenders = [
+        str(path.relative_to(ROOT))
+        for path in ROOT.glob(pattern_glob)
+        if pattern.search(path.read_text(encoding="utf-8"))
+    ]
+
+    assert offenders == []

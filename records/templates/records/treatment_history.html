@@ -28,7 +28,7 @@
         </ul>
 
         {% if record.prescription %}
-          <h3 class="mt-4 text-xs font-semibold text-slate-500 uppercase">Prescription ({{ record.prescription.get_status_display }})</h3>
+          <h3 class="mt-4 text-xs font-semibold text-slate-500 uppercase">Prescription {% include "records/partials/prescription_status.html" with prescription=record.prescription %}</h3>
           <ul class="mt-1 text-sm">
             {% for item in record.prescription.items.all %}
               <li>{{ item.medicine }} &middot; {{ item.dose }} {{ item.get_frequency_display|lower }} for {{ item.duration_days }} days</li>
