@@ -1,4 +1,5 @@
 {% extends "layouts/app.html" %}
+{% load money %}
 
 {% block title %}Medicines{% endblock %}
 
@@ -26,6 +27,8 @@
           <th class="px-4 py-3">Strength</th>
           <th class="px-4 py-3">Form</th>
           <th class="px-4 py-3">Generic name</th>
+          <th class="px-4 py-3 text-right">Unit price</th>
+          <th class="px-4 py-3 text-right">Reorder level</th>
           <th class="px-4 py-3">Status</th>
           <th class="px-4 py-3 text-right">Actions</th>
         </tr>
@@ -37,6 +40,8 @@
             <td class="px-4 py-3">{{ medicine.strength }}</td>
             <td class="px-4 py-3">{{ medicine.get_form_display }}</td>
             <td class="px-4 py-3">{{ medicine.generic_name|default:"—" }}</td>
+            <td class="px-4 py-3 text-right whitespace-nowrap">{{ medicine.unit_price|rupees }}</td>
+            <td class="px-4 py-3 text-right">{{ medicine.reorder_level }}</td>
             <td class="px-4 py-3">
               {% if medicine.is_active %}
                 <span class="rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">Active</span>
@@ -55,7 +60,7 @@
             </td>
           </tr>
         {% empty %}
-          <tr><td colspan="6" class="px-4 py-6 text-center text-slate-500">No medicines found.</td></tr>
+          <tr><td colspan="8" class="px-4 py-6 text-center text-slate-500">No medicines found.</td></tr>
         {% endfor %}
       </tbody>
     </table>

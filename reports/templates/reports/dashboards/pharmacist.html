@@ -3,7 +3,14 @@
 {% block title %}Pharmacist Dashboard{% endblock %}
 
 {% block content %}
-  <h1 class="text-2xl font-semibold text-slate-900">Pharmacist Dashboard</h1>
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-2xl font-semibold text-slate-900">Pharmacist Dashboard</h1>
+    <div class="flex flex-wrap gap-2">
+      <a href="{% url 'pharmacy:dispensing_queue' %}" class="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Prescriptions</a>
+      <a href="{% url 'pharmacy:inventory_list' %}" class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Receive stock</a>
+      <a href="{% url 'pharmacy:alerts' %}" class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Stock alerts</a>
+    </div>
+  </div>
   <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
     {% include "reports/partials/stat_card.html" with label="Pending prescriptions" %}
     {% include "reports/partials/stat_card.html" with label="Low-stock medicines" %}

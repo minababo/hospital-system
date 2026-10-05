@@ -1,0 +1,4 @@
+{# Expiry date with a badge. Expects `batch`, `today` and `expiry_warning_until` (a date). #}
+{{ batch.expiry_date|date:"d M Y" }}
+{% if batch.expiry_date < today %}<span class="ml-1 rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700">Expired</span>
+{% elif batch.expiry_date <= expiry_warning_until %}<span class="ml-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800">Expiring soon</span>{% endif %}
