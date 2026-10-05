@@ -1,4 +1,5 @@
 {% extends "layouts/app.html" %}
+{% load laboratory %}
 
 {% block title %}Treatment history{% endblock %}
 
@@ -62,6 +63,7 @@
             {% endfor %}
           </ul>
         {% endif %}
+        {% record_lab_section record request.user True %}
       </article>
     {% empty %}
       <p class="rounded-lg border border-slate-200 bg-white p-6 text-center text-slate-500">No finalized consultations yet.</p>

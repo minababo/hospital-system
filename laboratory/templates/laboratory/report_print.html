@@ -1,0 +1,31 @@
+{% extends "print/base.html" %}
+
+{% block title %}Lab report {{ order.number }}{% endblock %}
+{% block heading %}Laboratory report &middot; {{ order.number }}{% endblock %}
+
+{% block content %}
+  <table>
+    <tr><th>Patient</th><td>{{ order.patient.full_name }} ({{ order.patient.mrn }})</td><th>Age / gender</th><td>{{ order.patient.age }} years / {{ order.patient.get_gender_display }}</td></tr>
+    <tr><th>Requested by</th><td>{{ order.requested_by }}</td><th>Requested</th><td>{{ order.created_at|date:"d M Y H:i" }}</td></tr>
+    <tr><th>Sample collected</th><td>{{ order.sample_collected_at|date:"d M Y H:i" }}</td><th>Released</th><td>{{ order.released_at|date:"d M Y H:i" }} by {{ order.released_by|default:"—" }}</td></tr>
+  </table>
+
+  {% for item, rows in items %}
+    <h2>{{ item.test.name }} ({{ item.test.code }})</h2>
+    <table>
+      <tr><th>Parameter</th><th>Result</th><th>Unit</th><th>Reference</th><th>Flag</th></tr>
+      {% for parameter, result in rows %}
+        <tr>
+          <td>{{ parameter.name }}</td>
+          <td>{% if result.is_abnormal %}<strong>{{ result.display_value }}</strong>{% else %}{{ result.display_value }}{% endif %}</td>
+          <td>{{ result.unit }}</td>
+          <td>{{ result.reference_display }}</td>
+          <td>{% if result.flag == "H" or result.flag == "L" %}<strong>{{ result.flag }}</strong>{% endif %}</td>
+        </tr>
+      {% endfor %}
+    </table>
+    {% if item.comment %}<p><span class="muted">Comment:</span> {{ item.comment }}</p>{% endif %}
+  {% endfor %}
+
+  <p class="muted" style="margin-top: 2rem;">H = above reference range, L = below reference range.</p>
+{% endblock %}

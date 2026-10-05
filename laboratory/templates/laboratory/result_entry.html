@@ -1,0 +1,18 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}Enter results{% endblock %}
+
+{% block content %}
+  <a href="{% url 'laboratory:order_detail' order.pk %}" class="text-sm text-slate-600 hover:text-slate-900">&larr; Back to {{ order.number }}</a>
+  <h1 class="mt-2 text-2xl font-semibold text-slate-900">{{ item.test.name }}</h1>
+  <p class="mt-1 text-sm text-slate-600">{{ order.patient }} &middot; {{ order.number }}. Leave a box empty to clear that value.</p>
+
+  <form method="post" class="mt-6 max-w-3xl rounded-lg border border-slate-200 bg-white p-6 shadow-sm" novalidate>
+    {% csrf_token %}
+    {% include "partials/form_errors.html" %}
+    <div class="grid gap-4 sm:grid-cols-2">
+      {% for field in form %}{% include "partials/form_field.html" %}{% endfor %}
+    </div>
+    <button type="submit" class="mt-4 rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Save results</button>
+  </form>
+{% endblock %}

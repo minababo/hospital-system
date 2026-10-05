@@ -1,0 +1,65 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}Laboratory{% endblock %}
+
+{% block content %}
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-2xl font-semibold text-slate-900">{% if is_receptionist %}Completed lab reports{% else %}Laboratory worklist{% endif %}</h1>
+    {% if can_walk_in %}
+      <a href="{% url 'laboratory:walk_in' %}" class="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Walk-in request</a>
+    {% endif %}
+  </div>
+
+  <form method="get" class="mt-6 grid gap-3 sm:grid-cols-6">
+    <input type="search" name="q" value="{{ filter_form.q.value|default:'' }}" placeholder="Patient name, MRN or LAB-000123" class="sm:col-span-2">
+    {% if not is_receptionist %}{{ filter_form.status }}{% endif %}
+    {{ filter_form.priority }}
+    {{ filter_form.date }}
+    {{ filter_form.patient }}
+    {% if is_doctor %}<label class="flex items-center gap-2 text-sm">{{ filter_form.mine }} My orders</label>{% endif %}
+    <div class="flex gap-2 sm:col-span-6">
+      <button type="submit" class="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Filter</button>
+      <a href="{% url 'laboratory:worklist' %}" class="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">Clear</a>
+    </div>
+  </form>
+
+  <div class="mt-6 overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
+    <table class="min-w-full divide-y divide-slate-200 text-sm">
+      <thead class="bg-slate-50 text-left text-xs font-semibold tracking-wide text-slate-500 uppercase">
+        <tr>
+          <th class="px-4 py-3">Order</th>
+          <th class="px-4 py-3">Patient</th>
+          <th class="px-4 py-3">Tests</th>
+          <th class="px-4 py-3">Requested by</th>
+          <th class="px-4 py-3">Requested</th>
+          <th class="px-4 py-3">Status</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for order in orders %}
+          <tr>
+            <td class="px-4 py-3 font-mono">
+              {% if can_view_orders %}
+                <a href="{% url 'laboratory:order_detail' order.pk %}" class="hover:underline">{{ order.number }}</a>
+              {% else %}
+                <a href="{% url 'laboratory:report_print' order.pk %}" target="_blank" rel="noopener" class="hover:underline">{{ order.number }}</a>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3">{{ order.patient.full_name }} <span class="font-mono text-xs text-slate-500">{{ order.patient.mrn }}</span></td>
+            <td class="px-4 py-3">{% for item in order.items.all %}{{ item.test.code }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
+            <td class="px-4 py-3">{{ order.requested_by }}</td>
+            <td class="px-4 py-3 whitespace-nowrap">{{ order.created_at|date:"d M Y H:i" }}</td>
+            <td class="px-4 py-3">
+              {% include "laboratory/partials/status_badge.html" %}
+              {% if order.status == "COMPLETED" %}<a href="{% url 'laboratory:report_print' order.pk %}" target="_blank" rel="noopener" class="ml-2 text-xs underline">Print</a>{% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="px-4 py-6 text-center text-slate-500">No lab orders found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% include "partials/pagination.html" %}
+{% endblock %}

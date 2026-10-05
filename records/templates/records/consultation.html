@@ -1,4 +1,5 @@
 {% extends "layouts/app.html" %}
+{% load laboratory %}
 
 {% block title %}Consultation{% endblock %}
 
@@ -177,6 +178,9 @@
       </form>
     {% endif %}
   </section>
+
+  {# Lab orders and the order form come from the laboratory app's template tag. #}
+  {% record_lab_section record request.user %}
 
   {% if editable %}
     <form method="post" action="{% url 'records:finalize' record.pk %}" class="mt-6"

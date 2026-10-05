@@ -1,0 +1,59 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}{% if test %}Edit {{ test.code }}{% else %}Add lab test{% endif %}{% endblock %}
+
+{% block content %}
+  <a href="{% url 'laboratory:test_list' %}" class="text-sm text-slate-600 hover:text-slate-900">&larr; Back to catalog</a>
+  <h1 class="mt-2 text-2xl font-semibold text-slate-900">{% if test %}Edit {{ test }}{% else %}Add lab test{% endif %}</h1>
+
+  <form method="post" class="mt-6 max-w-3xl rounded-lg border border-slate-200 bg-white p-6 shadow-sm" novalidate>
+    {% csrf_token %}
+    {% include "partials/form_errors.html" %}
+    <div class="grid gap-4 sm:grid-cols-2">
+      {% for field in form %}{% include "partials/form_field.html" %}{% endfor %}
+    </div>
+    <button type="submit" class="mt-4 rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Save</button>
+  </form>
+
+  {% if test %}
+    <section class="mt-6 max-w-3xl rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+      <h2 class="text-lg font-semibold text-slate-900">Parameters</h2>
+      <p class="text-sm text-slate-500">The values measured for this test. A test needs at least one before it can be ordered.</p>
+      <table class="mt-3 min-w-full divide-y divide-slate-200 text-sm">
+        <thead class="text-left text-xs font-semibold tracking-wide text-slate-500 uppercase">
+          <tr><th class="py-2 pr-4">Order</th><th class="py-2 pr-4">Name</th><th class="py-2 pr-4">Type</th><th class="py-2 pr-4">Reference</th><th></th></tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for parameter in parameters %}
+            <tr>
+              <td class="py-2 pr-4">{{ parameter.display_order }}</td>
+              <td class="py-2 pr-4 font-medium">{{ parameter.name }}</td>
+              <td class="py-2 pr-4">{{ parameter.get_result_type_display }}</td>
+              <td class="py-2 pr-4">{{ parameter.reference_display }}</td>
+              <td class="py-2 text-right">
+                <div class="flex justify-end gap-3">
+                  <a href="{% url 'laboratory:parameter_update' parameter.pk %}" class="text-slate-700 hover:underline">Edit</a>
+                  <form method="post" action="{% url 'laboratory:parameter_remove' parameter.pk %}" onsubmit="return confirm('Remove this parameter?');">
+                    {% csrf_token %}<button type="submit" class="text-red-700 hover:underline">Remove</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5" class="py-3 text-slate-500">No parameters yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <form method="post" action="{% url 'laboratory:parameter_add' test.pk %}" class="mt-4 rounded-md bg-slate-50 p-4" novalidate>
+        {% csrf_token %}
+        <h3 class="font-semibold text-slate-900">Add a parameter</h3>
+        {% include "partials/form_errors.html" with form=parameter_form %}
+        <div class="mt-3 grid gap-3 sm:grid-cols-4">
+          {% for field in parameter_form %}{% include "partials/form_field.html" %}{% endfor %}
+        </div>
+        <button type="submit" class="mt-3 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50">Add parameter</button>
+      </form>
+    </section>
+  {% endif %}
+{% endblock %}

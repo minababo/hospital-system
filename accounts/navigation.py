@@ -10,23 +10,28 @@ PATIENTS = ("Patients", "patients:patient_list")
 APPOINTMENTS = ("Appointments", "appointments:appointment_list")
 MEDICINES = ("Medicines", "pharmacy:medicine_list")
 BILLING = ("Billing", "billing:invoice_list")
+LABORATORY = ("Laboratory", "laboratory:worklist")
+LAB_TESTS = ("Lab tests", "laboratory:test_list")
 
 NAV_ITEMS = {
     Role.ADMIN: [
         DASHBOARD,
         PATIENTS,
         APPOINTMENTS,
+        LABORATORY,
         BILLING,
         ("Users", "accounts:user_list"),
         ("Departments", "doctors:department_list"),
         DOCTORS,
         MEDICINES,
+        LAB_TESTS,
         CHANGE_PASSWORD,
     ],
     Role.DOCTOR: [
         DASHBOARD,
         PATIENTS,
         APPOINTMENTS,
+        LABORATORY,
         ("My profile", "doctors:me"),
         CHANGE_PASSWORD,
     ],
@@ -34,6 +39,7 @@ NAV_ITEMS = {
         DASHBOARD,
         PATIENTS,
         APPOINTMENTS,
+        LABORATORY,
         DOCTORS,
         CHANGE_PASSWORD,
     ],
@@ -41,12 +47,15 @@ NAV_ITEMS = {
         DASHBOARD,
         PATIENTS,
         APPOINTMENTS,
+        LABORATORY,
         BILLING,
         DOCTORS,
         CHANGE_PASSWORD,
     ],
     Role.LAB_STAFF: [
         DASHBOARD,
+        ("Lab worklist", "laboratory:worklist"),
+        LAB_TESTS,
         CHANGE_PASSWORD,
     ],
     Role.PHARMACIST: [
