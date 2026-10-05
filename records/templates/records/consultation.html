@@ -92,7 +92,7 @@
   <section class="mt-4 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
     <div class="flex flex-wrap items-center justify-between gap-2">
       <h2 class="text-lg font-semibold text-slate-900">Prescription</h2>
-      {% if prescription %}<span class="text-sm text-slate-600">{{ prescription.get_status_display }}</span>{% endif %}
+      {% if prescription %}{% include "records/partials/prescription_status.html" %}{% endif %}
     </div>
     {% if prescription.status == "CANCELLED" %}
       <p class="mt-2 text-sm text-red-700">Cancelled {{ prescription.cancelled_at|date:"d M Y H:i" }}: {{ prescription.cancel_reason }}</p>

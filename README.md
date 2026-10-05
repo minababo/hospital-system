@@ -207,6 +207,37 @@ onto each result when it's entered, so later catalog changes never alter a relea
 | Cancel an open order | Lab Staff, or the ordering doctor |
 | Print released reports | Admin, Doctor, Nurse, Lab Staff, Receptionist |
 
+## Pharmacy
+
+**Stock is kept per batch.** Each delivery is a batch with its own number and expiry date.
+Every change to a batch (received, dispensed, adjusted after a stock check, written off when
+expired) is recorded as a signed stock movement that is never edited afterwards, so the
+movements of a batch always add up to its quantity on hand.
+
+**Dispensing.** Issued prescriptions appear in the pharmacist's queue. The pharmacist enters how
+many units of each item to hand over; a prescription can be dispensed in parts and becomes
+*Partially dispensed* until everything is given, then *Dispensed*. Stock is taken **first
+expiry, first out** (FEFO) from usable batches; expired batches are never used. A dispense is
+all-or-nothing: if one item lacks stock, nothing is taken or billed.
+
+**Billing at dispense time.** Each dispensed item is billed as a pharmacy charge at the
+medicine's price at that moment, for the quantity actually handed over.
+
+**Alerts** (`/pharmacy/alerts/`): expired batches with stock left, batches expiring within
+`PHARMACY_EXPIRY_WARNING_DAYS` (default 90), low stock (at or below the reorder level) and out
+of stock.
+
+| Action | Who |
+|--------|-----|
+| Medicine catalog, inventory, receive / adjust / write off stock, alerts | Admin, Pharmacist |
+| Dispensing queue and prescription pages | Pharmacist (Admin can view) |
+| Dispense medicines | Pharmacist |
+
+**Layering.** Catalog and stock code (`pharmacy/models.py`, `selectors.py`, `services.py`) doesn't
+depend on medical records. Only `pharmacy/dispensing.py` and `dispensing_selectors.py` connect
+prescriptions, stock and billing, and prescription statuses are changed through the records
+app (`records.services.update_dispensing_status`).
+
 ## File storage
 
 Patient documents (PDF, JPG, PNG up to `MAX_UPLOAD_MB`) are stored in a **private** Supabase
@@ -246,6 +277,7 @@ Environment variables set on Render:
 | `SUPABASE_S3_*` (5 variables) | Supabase Storage connection for uploaded documents (see File storage) |
 | `MAX_UPLOAD_MB` | Largest upload allowed in MB (default 5) |
 | `APPOINTMENT_BOOKING_WINDOW_DAYS` | How many days ahead appointments can be booked (default 60) |
+| `PHARMACY_EXPIRY_WARNING_DAYS` | Days before expiry that a batch counts as "expiring soon" (default 90) |
 
 Render sets `RENDER_EXTERNAL_HOSTNAME` and `PORT` itself. The hostname is added to
 `ALLOWED_HOSTS` and `CSRF_TRUSTED_ORIGINS` automatically.

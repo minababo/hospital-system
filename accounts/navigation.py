@@ -9,6 +9,8 @@ DOCTORS = ("Doctors", "doctors:doctor_list")
 PATIENTS = ("Patients", "patients:patient_list")
 APPOINTMENTS = ("Appointments", "appointments:appointment_list")
 MEDICINES = ("Medicines", "pharmacy:medicine_list")
+INVENTORY = ("Inventory", "pharmacy:inventory_list")
+STOCK_ALERTS = ("Stock alerts", "pharmacy:alerts")
 BILLING = ("Billing", "billing:invoice_list")
 LABORATORY = ("Laboratory", "laboratory:worklist")
 LAB_TESTS = ("Lab tests", "laboratory:test_list")
@@ -24,6 +26,8 @@ NAV_ITEMS = {
         ("Departments", "doctors:department_list"),
         DOCTORS,
         MEDICINES,
+        INVENTORY,
+        STOCK_ALERTS,
         LAB_TESTS,
         CHANGE_PASSWORD,
     ],
@@ -60,6 +64,9 @@ NAV_ITEMS = {
     ],
     Role.PHARMACIST: [
         DASHBOARD,
+        ("Prescriptions", "pharmacy:dispensing_queue"),
+        INVENTORY,
+        STOCK_ALERTS,
         MEDICINES,
         CHANGE_PASSWORD,
     ],

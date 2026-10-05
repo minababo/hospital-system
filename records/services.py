@@ -239,6 +239,26 @@ def cancel_prescription(prescription, *, reason, acting_user, now=None):
     return prescription
 
 
+@transaction.atomic
+def update_dispensing_status(prescription, *, fully_dispensed, acting_user, now=None):
+    """Record that medicines were handed over: PARTIALLY_DISPENSED, or DISPENSED when
+    nothing is left. Called by the pharmacy app; records owns the prescription status
+    rules, so pharmacy never sets the status field itself. DISPENSED is final."""
+    prescription = Prescription.objects.select_for_update().get(pk=prescription.pk)
+    if prescription.status not in (
+        PrescriptionStatus.ISSUED,
+        PrescriptionStatus.PARTIALLY_DISPENSED,
+    ):
+        raise ValidationError(
+            f"A {prescription.get_status_display().lower()} prescription can't be dispensed."
+        )
+    prescription.status = (
+        PrescriptionStatus.DISPENSED if fully_dispensed else PrescriptionStatus.PARTIALLY_DISPENSED
+    )
+    prescription.save(update_fields=["status", "updated_at"])
+    return prescription
+
+
 # --- Vitals -----------------------------------------------------------------
 
 VITAL_FIELDS = (
