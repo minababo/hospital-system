@@ -97,6 +97,7 @@ class AdmissionFilterForm(forms.Form):
         queryset=Ward.objects.filter(is_active=True), required=False, empty_label="All wards"
     )
     q = forms.CharField(required=False)
+    mine = forms.BooleanField(required=False, label="My inpatients")
     date_from = forms.DateField(
         required=False, widget=forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d")
     )
