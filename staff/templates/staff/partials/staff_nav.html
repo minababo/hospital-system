@@ -1,0 +1,7 @@
+{# Section links shared by the HR pages. #}
+<nav class="mt-4 flex flex-wrap gap-2 text-sm">
+  <a href="{% url 'staff:employee_list' %}" class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-slate-700 hover:bg-slate-50">Employees</a>
+  <a href="{% url 'staff:attendance' %}" class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-slate-700 hover:bg-slate-50">Daily attendance</a>
+  <a href="{% url 'staff:attendance_monthly' %}" class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-slate-700 hover:bg-slate-50">Monthly attendance</a>
+  <a href="{% url 'staff:leave_list' %}" class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-slate-700 hover:bg-slate-50">Leave</a>
+</nav>

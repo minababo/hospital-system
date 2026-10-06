@@ -1,0 +1,55 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}Leave{% endblock %}
+
+{% block content %}
+  <h1 class="text-2xl font-semibold text-slate-900">Leave</h1>
+  {% include "staff/partials/staff_nav.html" %}
+
+  <form method="get" class="mt-6 grid gap-3 sm:grid-cols-5">
+    {{ filter_form.status }}
+    {{ filter_form.employee }}
+    {{ filter_form.date_from }}
+    {{ filter_form.date_to }}
+    <button type="submit" class="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Filter</button>
+  </form>
+
+  <div class="mt-4 overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
+    <table class="min-w-full divide-y divide-slate-200 text-sm">
+      <thead class="bg-slate-50 text-left text-xs font-semibold tracking-wide text-slate-500 uppercase">
+        <tr><th class="px-4 py-3">Employee</th><th class="px-4 py-3">Type</th><th class="px-4 py-3">Dates</th><th class="px-4 py-3 text-right">Days</th><th class="px-4 py-3">Status</th></tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for leave in leave_requests %}
+          <tr>
+            <td class="px-4 py-3"><a href="{% url 'staff:leave_detail' leave.pk %}" class="font-medium hover:underline">{{ leave.employee.full_name }}</a> <span class="text-xs text-slate-500">{{ leave.employee.department }}</span></td>
+            <td class="px-4 py-3">{{ leave.get_leave_type_display }}</td>
+            <td class="px-4 py-3 whitespace-nowrap">{{ leave.start_date|date:"d M Y" }} – {{ leave.end_date|date:"d M Y" }}</td>
+            <td class="px-4 py-3 text-right">{{ leave.days }}</td>
+            <td class="px-4 py-3">{% include "staff/partials/leave_status.html" %}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" class="px-4 py-6 text-center text-slate-500">No leave found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <form method="post" class="mt-6 max-w-3xl rounded-lg border border-slate-200 bg-white p-6 shadow-sm" novalidate>
+    {% csrf_token %}
+    <h2 class="text-lg font-semibold text-slate-900">Record leave</h2>
+    <p class="text-sm text-slate-500">Recorded leave is approved immediately.</p>
+    <div class="mt-3">{% include "partials/form_errors.html" with form=record_form %}</div>
+    <div class="mt-3 grid gap-3 sm:grid-cols-2">
+      {% include "partials/form_field.html" with field=record_form.employee %}
+      {% include "partials/form_field.html" with field=record_form.leave_type %}
+      {% include "partials/form_field.html" with field=record_form.start_date %}
+      {% include "partials/form_field.html" with field=record_form.end_date %}
+    </div>
+    <div class="mt-3">{% include "partials/form_field.html" with field=record_form.reason %}</div>
+    {% if show_confirm %}
+      <label class="mt-3 flex items-center gap-2 text-sm font-medium text-red-800">{{ record_form.confirm_doctor_conflicts }} {{ record_form.confirm_doctor_conflicts.label }}</label>
+    {% endif %}
+    <button type="submit" class="mt-4 rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Record leave</button>
+  </form>
+{% endblock %}

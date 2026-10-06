@@ -15,6 +15,7 @@ urlpatterns = [
     path("billing/", include("billing.urls")),
     path("laboratory/", include("laboratory.urls")),
     path("admissions/", include("admissions.urls")),
+    path("staff/", include("staff.urls")),
     path("", include("reports.urls")),
     path("", views.home, name="home"),
 ]

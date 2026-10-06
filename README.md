@@ -265,6 +265,29 @@ overnight is charged one day at the last bed's rate.
 **Out of scope for this version:** inpatient prescriptions and medication charts, lab orders
 raised from an admission (outside a consultation), and interim bills during a long stay.
 
+## Staff
+
+**Employees and logins are separate.** An employee record (`EMP-000123`) holds HR details:
+designation, category, employment type, department and joining date. A login account is
+optional; porters and cleaners may have none. Linking a login lets that person request leave
+themselves under **My leave**. Ending employment (resigned or terminated) cancels their pending
+leave and removes them from attendance sheets after their last day.
+
+**Attendance and leave never overlap.** Each day for each employee is either covered by approved
+leave or has an attendance record (present, half day or absent), never both. The daily sheet
+shows people on approved leave as read-only rows, and approving leave is refused while any of its
+days already has attendance (the message lists those dates). Rows left blank on the sheet are not
+saved; existing records for them are kept.
+
+**Doctors on leave.** If a doctor has booked appointments during requested leave, approval asks for
+an extra confirmation and lists the appointments. *Known limitation:* the leave doesn't block
+booking or cancel those appointments; reception has to reschedule them.
+
+| Page | Who |
+|------|-----|
+| Employees, daily and monthly attendance, leave list, approve / reject / record leave | Admin |
+| My leave (request, see decisions, cancel before it starts) | Any user linked to a current employee record |
+
 ## File storage
 
 Patient documents (PDF, JPG, PNG up to `MAX_UPLOAD_MB`) are stored in a **private** Supabase
