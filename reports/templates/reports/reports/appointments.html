@@ -1,0 +1,42 @@
+{% with r=report %}
+<div class="grid gap-3 sm:grid-cols-3">
+  <div class="rounded-md border border-slate-200 bg-white p-4"><p class="text-xs text-slate-500 uppercase">Appointments</p><p class="text-xl font-semibold">{{ r.total }}</p></div>
+  <div class="rounded-md border border-slate-200 bg-white p-4"><p class="text-xs text-slate-500 uppercase">Cancellation rate</p><p class="text-xl font-semibold">{{ r.cancellation_rate }}%</p></div>
+  <div class="rounded-md border border-slate-200 bg-white p-4"><p class="text-xs text-slate-500 uppercase">No-show rate</p><p class="text-xl font-semibold">{{ r.no_show_rate }}%</p></div>
+</div>
+
+<div class="mt-6 grid gap-6 lg:grid-cols-3">
+  <section>
+    <h2 class="font-semibold">By status</h2>
+    <table class="mt-2 w-full text-sm">
+      {% for row in r.by_status %}<tr><td class="py-1 pr-2 whitespace-nowrap">{{ row.label }}</td><td class="w-full py-1">{% include "reports/partials/bar.html" with width=row.bar %}</td><td class="py-1 pl-2 text-right">{{ row.count }}</td></tr>{% endfor %}
+    </table>
+  </section>
+  <section>
+    <h2 class="font-semibold">By department</h2>
+    <table class="mt-2 w-full text-sm">
+      {% for row in r.by_department %}<tr><td class="py-1 pr-2 whitespace-nowrap">{{ row.label }}</td><td class="w-full py-1">{% include "reports/partials/bar.html" with width=row.bar %}</td><td class="py-1 pl-2 text-right">{{ row.count }}</td></tr>{% empty %}<tr><td class="py-1 text-slate-500">—</td></tr>{% endfor %}
+    </table>
+  </section>
+  <section>
+    <h2 class="font-semibold">Per day</h2>
+    <table class="mt-2 w-full text-sm">
+      {% for row in r.per_day %}<tr><td class="py-1 pr-2 whitespace-nowrap">{{ row.day|date:"d M" }}</td><td class="w-full py-1">{% include "reports/partials/bar.html" with width=row.bar %}</td><td class="py-1 pl-2 text-right">{{ row.count }}</td></tr>{% empty %}<tr><td class="py-1 text-slate-500">—</td></tr>{% endfor %}
+    </table>
+  </section>
+</div>
+
+<h2 class="mt-6 font-semibold">By doctor</h2>
+<div class="mt-2 overflow-x-auto rounded-lg border border-slate-200 bg-white">
+  <table class="min-w-full divide-y divide-slate-200 text-sm">
+    <thead class="bg-slate-50 text-left text-xs font-semibold text-slate-500 uppercase"><tr><th class="px-3 py-2">Doctor</th><th class="px-3 py-2">Department</th><th class="num px-3 py-2 text-right">Total</th><th class="num px-3 py-2 text-right">Completed</th><th class="num px-3 py-2 text-right">Cancelled</th><th class="num px-3 py-2 text-right">No-show</th></tr></thead>
+    <tbody class="divide-y divide-slate-100">
+      {% for row in r.by_doctor %}
+        <tr><td class="px-3 py-2">{{ row.doctor }}</td><td class="px-3 py-2">{{ row.department }}</td><td class="num px-3 py-2 text-right">{{ row.count }}</td><td class="num px-3 py-2 text-right">{{ row.completed }}</td><td class="num px-3 py-2 text-right">{{ row.cancelled }}</td><td class="num px-3 py-2 text-right">{{ row.no_show }}</td></tr>
+      {% empty %}
+        <tr><td colspan="6" class="px-3 py-4 text-center text-slate-500">No appointments in this range.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endwith %}

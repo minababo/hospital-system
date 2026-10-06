@@ -10,12 +10,5 @@
       <a href="{% url 'staff:leave_list' %}" class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Pending leave</a>
     </div>
   </div>
-  <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-    {% include "reports/partials/stat_card.html" with label="Total patients" %}
-    {% include "reports/partials/stat_card.html" with label="Today's appointments" %}
-    {% include "reports/partials/stat_card.html" with label="Revenue this month" %}
-    {% include "reports/partials/stat_card.html" with label="Pending lab requests" %}
-    {% include "reports/partials/stat_card.html" with label="Pharmacy alerts" %}
-    {% include "reports/partials/stat_card.html" with label="Active staff" %}
-  </div>
+  {% include "reports/partials/cards.html" %}
 {% endblock %}

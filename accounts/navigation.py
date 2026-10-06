@@ -17,6 +17,7 @@ LAB_TESTS = ("Lab tests", "laboratory:test_list")
 ADMISSIONS = ("Admissions", "admissions:admission_list")
 # Shown to any user linked to an active employee record (see context_processors).
 MY_LEAVE = ("My leave", "staff:my_leave")
+REPORTS = ("Reports", "reports:index")
 
 NAV_ITEMS = {
     Role.ADMIN: [
@@ -37,6 +38,7 @@ NAV_ITEMS = {
         INVENTORY,
         STOCK_ALERTS,
         LAB_TESTS,
+        REPORTS,
         CHANGE_PASSWORD,
     ],
     Role.DOCTOR: [
@@ -46,6 +48,7 @@ NAV_ITEMS = {
         ADMISSIONS,
         LABORATORY,
         ("My profile", "doctors:me"),
+        REPORTS,
         CHANGE_PASSWORD,
     ],
     Role.NURSE: [
@@ -65,12 +68,14 @@ NAV_ITEMS = {
         LABORATORY,
         BILLING,
         DOCTORS,
+        REPORTS,
         CHANGE_PASSWORD,
     ],
     Role.LAB_STAFF: [
         DASHBOARD,
         ("Lab worklist", "laboratory:worklist"),
         LAB_TESTS,
+        REPORTS,
         CHANGE_PASSWORD,
     ],
     Role.PHARMACIST: [
@@ -79,11 +84,13 @@ NAV_ITEMS = {
         INVENTORY,
         STOCK_ALERTS,
         MEDICINES,
+        REPORTS,
         CHANGE_PASSWORD,
     ],
     Role.ACCOUNTANT: [
         DASHBOARD,
         BILLING,
+        REPORTS,
         CHANGE_PASSWORD,
     ],
 }
