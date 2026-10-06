@@ -66,7 +66,6 @@ NOT_ADMISSIONS = [
     "patients",
     "pharmacy",
     "records",
-    "reports",
 ]
 
 
@@ -96,13 +95,41 @@ NOT_STAFF = [
     "patients",
     "pharmacy",
     "records",
-    "reports",
 ]
 
 
 @pytest.mark.parametrize("app", NOT_STAFF)
 def test_no_app_imports_staff(app):
     pattern = re.compile(r"^\s*(from|import)\s+staff\b", re.MULTILINE)
+    offenders = [
+        str(path.relative_to(ROOT))
+        for path in (ROOT / app).rglob("*.py")
+        if pattern.search(path.read_text(encoding="utf-8"))
+    ]
+
+    assert offenders == []
+
+
+# reports is the top-level aggregator: it reads every app, so nothing may import it
+# (config/urls.py only includes its URLs).
+NOT_REPORTS = [
+    "accounts",
+    "admissions",
+    "appointments",
+    "billing",
+    "common",
+    "doctors",
+    "laboratory",
+    "patients",
+    "pharmacy",
+    "records",
+    "staff",
+]
+
+
+@pytest.mark.parametrize("app", NOT_REPORTS)
+def test_no_app_imports_reports(app):
+    pattern = re.compile(r"^\s*(from|import)\s+reports\b", re.MULTILINE)
     offenders = [
         str(path.relative_to(ROOT))
         for path in (ROOT / app).rglob("*.py")
