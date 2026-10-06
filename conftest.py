@@ -9,6 +9,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils import timezone
 
 from accounts.models import Role, User
+from admissions.models import Admission, Bed, BedAssignment, Ward
 from appointments import services as appointment_services
 from appointments.models import Appointment, Status
 from billing.models import Charge, ChargeType, Invoice
@@ -351,6 +352,52 @@ def make_issued_prescription(make_record, make_medicine):
         return prescription
 
     return _make_issued_prescription
+
+
+@pytest.fixture
+def make_ward(db):
+    counter = itertools.count(1)
+
+    def _make_ward(daily_rate="5000.00", **kwargs):
+        kwargs.setdefault("name", f"Ward {next(counter)}")
+        kwargs.setdefault("ward_type", "GENERAL")
+        return Ward.objects.create(daily_rate=Decimal(str(daily_rate)), **kwargs)
+
+    return _make_ward
+
+
+@pytest.fixture
+def make_bed(make_ward):
+    counter = itertools.count(1)
+
+    def _make_bed(ward=None, **kwargs):
+        kwargs.setdefault("bed_number", f"B{next(counter):02d}")
+        return Bed.objects.create(ward=ward or make_ward(), **kwargs)
+
+    return _make_bed
+
+
+@pytest.fixture
+def make_admission(make_patient, make_bed, make_doctor, make_user):
+    """A current admission (source DIRECT) with its first bed assignment, created
+    directly (no service checks, no charges). Default: admitted now."""
+
+    def _make_admission(patient=None, bed=None, admitted_at=None, **kwargs):
+        bed = bed or make_bed()
+        admitted_at = admitted_at or timezone.now()
+        kwargs.setdefault("admitting_doctor", make_doctor())
+        kwargs.setdefault("source", "DIRECT")
+        kwargs.setdefault("reason", "Observation")
+        kwargs.setdefault("admitted_by", make_user(role=Role.NURSE))
+        admission = Admission.objects.create(
+            patient=patient or make_patient(), admitted_at=admitted_at, **kwargs
+        )
+        BedAssignment.objects.create(
+            admission=admission, bed=bed, daily_rate=bed.ward.daily_rate, started_at=admitted_at
+        )
+        return admission
+
+    return _make_admission
 
 
 # Smallest byte strings that pass the file-type checks in common/validators.py.
