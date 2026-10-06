@@ -15,6 +15,8 @@ BILLING = ("Billing", "billing:invoice_list")
 LABORATORY = ("Laboratory", "laboratory:worklist")
 LAB_TESTS = ("Lab tests", "laboratory:test_list")
 ADMISSIONS = ("Admissions", "admissions:admission_list")
+# Shown to any user linked to an active employee record (see context_processors).
+MY_LEAVE = ("My leave", "staff:my_leave")
 
 NAV_ITEMS = {
     Role.ADMIN: [
@@ -25,6 +27,9 @@ NAV_ITEMS = {
         LABORATORY,
         BILLING,
         ("Users", "accounts:user_list"),
+        ("Staff", "staff:employee_list"),
+        ("Attendance", "staff:attendance"),
+        ("Leave", "staff:leave_list"),
         ("Departments", "doctors:department_list"),
         ("Wards & beds", "admissions:ward_list"),
         DOCTORS,

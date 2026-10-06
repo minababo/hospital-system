@@ -1,0 +1,46 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}Staff{% endblock %}
+
+{% block content %}
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-2xl font-semibold text-slate-900">Staff</h1>
+    <a href="{% url 'staff:employee_create' %}" class="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Register employee</a>
+  </div>
+  {% include "staff/partials/staff_nav.html" %}
+
+  <form method="get" class="mt-6 grid gap-3 sm:grid-cols-5">
+    <input type="search" name="q" value="{{ filter_form.q.value|default:'' }}" placeholder="Name, EMP-000123, NIC or phone" class="sm:col-span-2">
+    {{ filter_form.department }}
+    {{ filter_form.category }}
+    {{ filter_form.status }}
+    <div class="flex gap-2 sm:col-span-5">
+      <button type="submit" class="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Filter</button>
+      <a href="{% url 'staff:employee_list' %}" class="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">Clear</a>
+    </div>
+  </form>
+
+  <div class="mt-6 overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
+    <table class="min-w-full divide-y divide-slate-200 text-sm">
+      <thead class="bg-slate-50 text-left text-xs font-semibold tracking-wide text-slate-500 uppercase">
+        <tr><th class="px-4 py-3">Employee</th><th class="px-4 py-3">Designation</th><th class="px-4 py-3">Department</th><th class="px-4 py-3">Category</th><th class="px-4 py-3">Login</th><th class="px-4 py-3">Status</th></tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for employee in employees %}
+          <tr>
+            <td class="px-4 py-3"><a href="{% url 'staff:employee_detail' employee.pk %}" class="font-medium text-slate-900 hover:underline">{{ employee.full_name }}</a> <span class="font-mono text-xs text-slate-500">{{ employee.number }}</span></td>
+            <td class="px-4 py-3">{{ employee.designation }}</td>
+            <td class="px-4 py-3">{{ employee.department }}</td>
+            <td class="px-4 py-3">{{ employee.get_category_display }}</td>
+            <td class="px-4 py-3">{{ employee.user.username|default:"—" }}</td>
+            <td class="px-4 py-3">{% if employee.is_active %}<span class="rounded-full bg-green-50 px-2 py-0.5 text-xs text-green-700">Active</span>{% else %}<span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">{{ employee.get_status_display }}</span>{% endif %}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="px-4 py-6 text-center text-slate-500">No employees found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% include "partials/pagination.html" %}
+{% endblock %}

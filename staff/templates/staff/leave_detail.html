@@ -1,0 +1,58 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}Leave request{% endblock %}
+
+{% block content %}
+  <a href="{% url 'staff:leave_list' %}" class="text-sm text-slate-600 hover:text-slate-900">&larr; Back to leave</a>
+  <div class="mt-2 flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-2xl font-semibold text-slate-900">{{ leave.get_leave_type_display }} leave — {{ leave.employee.full_name }}</h1>
+    {% include "staff/partials/leave_status.html" %}
+  </div>
+
+  <dl class="mt-6 grid gap-4 rounded-lg border border-slate-200 bg-white p-6 text-sm shadow-sm sm:grid-cols-2 lg:grid-cols-3">
+    <div><dt class="text-slate-500">Dates</dt><dd class="mt-1 font-medium">{{ leave.start_date|date:"d M Y" }} – {{ leave.end_date|date:"d M Y" }} ({{ leave.days }} day{{ leave.days|pluralize }})</dd></div>
+    <div><dt class="text-slate-500">Employee</dt><dd class="mt-1 font-medium"><a href="{% url 'staff:employee_detail' leave.employee.pk %}" class="hover:underline">{{ leave.employee }}</a></dd></div>
+    <div><dt class="text-slate-500">Requested</dt><dd class="mt-1 font-medium">{{ leave.requested_at|date:"d M Y H:i" }} by {{ leave.requested_by }}</dd></div>
+    <div class="sm:col-span-2 lg:col-span-3"><dt class="text-slate-500">Reason</dt><dd class="mt-1 whitespace-pre-line">{{ leave.reason }}</dd></div>
+    {% if leave.decided_at %}<div class="sm:col-span-2"><dt class="text-slate-500">Decision</dt><dd class="mt-1 font-medium">{{ leave.get_status_display }} by {{ leave.decided_by }} on {{ leave.decided_at|date:"d M Y H:i" }}{% if leave.decision_note %}: {{ leave.decision_note }}{% endif %}</dd></div>{% endif %}
+    {% if leave.cancelled_at %}<div><dt class="text-slate-500">Cancelled</dt><dd class="mt-1 font-medium">{{ leave.cancelled_at|date:"d M Y H:i" }}</dd></div>{% endif %}
+  </dl>
+
+  {% if appointments %}
+    <section class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-6 text-sm text-amber-900">
+      <h2 class="font-semibold">{{ appointments|length }} booked appointment{{ appointments|length|pluralize }} during this leave</h2>
+      <p class="mt-1">Approving the leave does not cancel or move them; reception should reschedule them.</p>
+      <ul class="mt-2 list-disc pl-5">
+        {% for appointment in appointments|slice:":10" %}<li>{{ appointment.date|date:"d M Y" }} {{ appointment.start_time|time:"H:i" }} — {{ appointment.patient.full_name }}</li>{% endfor %}
+      </ul>
+    </section>
+  {% endif %}
+
+  {% if leave.status == "PENDING" %}
+    <div class="mt-4 grid gap-4 lg:grid-cols-2">
+      <form method="post" action="{% url 'staff:leave_approve' leave.pk %}" class="space-y-3 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+        {% csrf_token %}
+        <h2 class="font-semibold text-slate-900">Approve</h2>
+        {% include "partials/form_errors.html" with form=decision_form %}
+        <input type="text" name="note" placeholder="Note (optional)" class="w-full">
+        {% if show_confirm %}
+          <label class="flex items-center gap-2 text-sm font-medium text-red-800">{{ decision_form.confirm_doctor_conflicts }} {{ decision_form.confirm_doctor_conflicts.label }}</label>
+        {% endif %}
+        <button type="submit" class="rounded-md bg-green-700 px-4 py-2 text-sm font-medium text-white hover:bg-green-600">Approve</button>
+      </form>
+      <form method="post" action="{% url 'staff:leave_reject' leave.pk %}" class="space-y-3 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+        {% csrf_token %}
+        <h2 class="font-semibold text-slate-900">Reject</h2>
+        <input type="text" name="note" placeholder="Reason (required)" required class="w-full">
+        <button type="submit" class="rounded-md bg-red-700 px-4 py-2 text-sm font-medium text-white hover:bg-red-600">Reject</button>
+      </form>
+    </div>
+  {% endif %}
+
+  {% if can_cancel %}
+    <form method="post" action="{% url 'staff:leave_cancel' leave.pk %}" class="mt-4" onsubmit="return confirm('Cancel this leave?');">
+      {% csrf_token %}
+      <button type="submit" class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">Cancel leave</button>
+    </form>
+  {% endif %}
+{% endblock %}

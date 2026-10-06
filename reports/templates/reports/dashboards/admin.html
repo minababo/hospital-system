@@ -3,7 +3,13 @@
 {% block title %}Admin Dashboard{% endblock %}
 
 {% block content %}
-  <h1 class="text-2xl font-semibold text-slate-900">Admin Dashboard</h1>
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-2xl font-semibold text-slate-900">Admin Dashboard</h1>
+    <div class="flex flex-wrap gap-2">
+      <a href="{% url 'staff:attendance' %}" class="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Attendance today</a>
+      <a href="{% url 'staff:leave_list' %}" class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Pending leave</a>
+    </div>
+  </div>
   <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
     {% include "reports/partials/stat_card.html" with label="Total patients" %}
     {% include "reports/partials/stat_card.html" with label="Today's appointments" %}
