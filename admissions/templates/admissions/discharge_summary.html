@@ -1,0 +1,31 @@
+{% extends "print/base.html" %}
+{% load money %}
+
+{% block title %}Discharge summary {{ admission.number }}{% endblock %}
+{% block heading %}Discharge summary &middot; {{ admission.number }}{% endblock %}
+
+{% block content %}
+  <table>
+    <tr><th>Patient</th><td>{{ patient.full_name }} ({{ patient.mrn }}), {{ patient.age }} years, {{ patient.get_gender_display }}</td></tr>
+    <tr><th>Admitting doctor</th><td>{{ admission.admitting_doctor }}</td></tr>
+    <tr><th>Admitted</th><td>{{ admission.admitted_at|date:"d M Y H:i" }}</td></tr>
+    <tr><th>Discharged</th><td>{{ admission.discharged_at|date:"d M Y H:i" }} by {{ admission.discharged_by }}</td></tr>
+    <tr><th>Length of stay</th><td>{{ length_of_stay }} day{{ length_of_stay|pluralize }}</td></tr>
+    <tr><th>Discharge type</th><td>{{ admission.get_discharge_type_display }}</td></tr>
+  </table>
+  {% if patient.allergies %}<p class="allergy">Allergies: {{ patient.allergies }}</p>{% endif %}
+
+  <h2>Reason for admission</h2>
+  <p>{{ admission.reason|linebreaksbr }}</p>
+
+  <h2>Bed history</h2>
+  <table>
+    <tr><th>Ward / bed</th><th>From</th><th>To</th><th class="num">Nights</th></tr>
+    {% for assignment, nights in assignments %}
+      <tr><td>{{ assignment.bed }}</td><td>{{ assignment.started_at|date:"d M Y H:i" }}</td><td>{{ assignment.ended_at|date:"d M Y H:i" }}</td><td class="num">{{ nights }}</td></tr>
+    {% endfor %}
+  </table>
+
+  <h2>Discharge summary</h2>
+  <p>{{ admission.discharge_summary|linebreaksbr }}</p>
+{% endblock %}

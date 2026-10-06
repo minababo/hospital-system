@@ -1,4 +1,5 @@
 {% extends "layouts/app.html" %}
+{% load admissions %}
 
 {% block title %}Appointment{% endblock %}
 
@@ -26,6 +27,8 @@
     <div class="flex flex-wrap items-center justify-between gap-3">
       <h2 class="text-lg font-semibold text-slate-900">Consultation</h2>
       <div class="flex flex-wrap gap-2">
+        {# From the admissions app's template tag: appointments never imports admissions. #}
+        {% appointment_admit_action appointment request.user %}
         {% if can_record_vitals %}
           <a href="{% url 'records:vitals' appointment.pk %}" class="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50">Record vitals</a>
         {% endif %}

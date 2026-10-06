@@ -52,3 +52,31 @@ def test_file_does_not_import(pattern_glob, forbidden):
     ]
 
     assert offenders == []
+
+
+# Nothing imports admissions: other pages show its data through its template tags.
+NOT_ADMISSIONS = [
+    "accounts",
+    "appointments",
+    "billing",
+    "common",
+    "config",
+    "doctors",
+    "laboratory",
+    "patients",
+    "pharmacy",
+    "records",
+    "reports",
+]
+
+
+@pytest.mark.parametrize("app", NOT_ADMISSIONS)
+def test_no_app_imports_admissions(app):
+    pattern = re.compile(r"^\s*(from|import)\s+admissions\b", re.MULTILINE)
+    offenders = [
+        str(path.relative_to(ROOT))
+        for path in (ROOT / app).rglob("*.py")
+        if pattern.search(path.read_text(encoding="utf-8"))
+    ]
+
+    assert offenders == []
