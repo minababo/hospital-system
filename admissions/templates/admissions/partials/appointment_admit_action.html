@@ -1,0 +1,6 @@
+{# Rendered by {% appointment_admit_action appointment user %} on the appointment page. #}
+{% if current %}
+  <a href="{% url 'admissions:admission_detail' current.pk %}" class="rounded-md border border-blue-200 bg-blue-50 px-3 py-1.5 text-sm text-blue-800 hover:bg-blue-100">Currently admitted — {{ current.number }}</a>
+{% elif can_admit %}
+  <a href="{% url 'admissions:admit' %}?patient={{ appointment.patient_id }}&appointment={{ appointment.pk }}" class="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50">Admit patient</a>
+{% endif %}

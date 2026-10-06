@@ -1,0 +1,38 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}{{ ward.name }} beds{% endblock %}
+
+{% block content %}
+  <a href="{% url 'admissions:ward_list' %}" class="text-sm text-slate-600 hover:text-slate-900">&larr; Back to wards</a>
+  <h1 class="mt-2 text-2xl font-semibold text-slate-900">{{ ward.name }} — beds</h1>
+
+  <div class="mt-6 overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
+    <table class="min-w-full divide-y divide-slate-200 text-sm">
+      <thead class="bg-slate-50 text-left text-xs font-semibold tracking-wide text-slate-500 uppercase">
+        <tr><th class="px-4 py-3">Bed</th><th class="px-4 py-3">State</th><th class="px-4 py-3 text-right">Actions</th></tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for bed in beds %}
+          <tr>
+            <td class="px-4 py-3 font-mono">{{ bed.bed_number }}</td>
+            <td class="px-4 py-3">{% if bed.pk in occupied %}Occupied{% elif bed.is_active %}Free{% else %}Not in use{% endif %}</td>
+            <td class="px-4 py-3">
+              <div class="flex justify-end gap-3 whitespace-nowrap">
+                <a href="{% url 'admissions:bed_update' bed.pk %}" class="text-slate-700 hover:underline">Edit</a>
+                <form method="post" action="{% url 'admissions:bed_toggle_active' bed.pk %}">{% csrf_token %}<button type="submit" class="text-slate-700 hover:underline">{% if bed.is_active %}Deactivate{% else %}Activate{% endif %}</button></form>
+              </div>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="3" class="px-4 py-6 text-center text-slate-500">No beds yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <form method="post" action="{% url 'admissions:bed_add' ward.pk %}" class="mt-4 flex max-w-md flex-wrap items-end gap-2 rounded-lg border border-slate-200 bg-white p-4 shadow-sm" novalidate>
+    {% csrf_token %}
+    <div class="grow">{% include "partials/form_errors.html" %}{% include "partials/form_field.html" with field=form.bed_number %}</div>
+    <button type="submit" class="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Add bed</button>
+  </form>
+{% endblock %}

@@ -1,0 +1,29 @@
+{# Rendered by {% patient_admission_summary patient user %} on the patient page. #}
+{% if visible %}
+  {% if current %}
+    <div class="mt-4 rounded-md border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+      <span class="font-semibold">Currently admitted</span>
+      ({{ current.number }}) in {{ current.current_bed|default:"—" }} since {{ current.admitted_at|date:"d M Y H:i" }}.
+      <a href="{% url 'admissions:admission_detail' current.pk %}" class="font-medium underline">Open admission</a>
+    </div>
+  {% endif %}
+  <section class="mt-8">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <h2 class="text-lg font-semibold text-slate-900">Admissions</h2>
+      {% if can_admit and not current %}
+        <a href="{% url 'admissions:admit' %}?patient={{ patient.pk }}" class="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">Admit patient</a>
+      {% endif %}
+    </div>
+    <ul class="mt-3 divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white text-sm shadow-sm">
+      {% for admission in admissions %}
+        <li class="flex flex-wrap items-center justify-between gap-2 px-4 py-2">
+          <a href="{% url 'admissions:admission_detail' admission.pk %}" class="font-mono hover:underline">{{ admission.number }}</a>
+          <span>{{ admission.admitted_at|date:"d M Y" }}{% if admission.discharged_at %} – {{ admission.discharged_at|date:"d M Y" }}{% endif %}</span>
+          <span>{% include "admissions/partials/status_badge.html" %}</span>
+        </li>
+      {% empty %}
+        <li class="px-4 py-2 text-slate-500">No admissions.</li>
+      {% endfor %}
+    </ul>
+  </section>
+{% endif %}
