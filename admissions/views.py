@@ -7,6 +7,7 @@ from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.http import require_POST
 
+from accounts.models import Role
 from accounts.permissions import RoleRequiredMixin, user_has_role
 from admissions import selectors, services
 from admissions.forms import (
@@ -46,10 +47,20 @@ class AdmissionListView(RoleRequiredMixin, View):
             tab = "inpatients"
         form = AdmissionFilterForm(request.GET)
         filters = form.cleaned_data if form.is_valid() else {}
-        context = {"tab": tab, "form": form, "can_admit": user_has_role(request.user, *ADMIT)}
+        is_doctor = request.user.role == Role.DOCTOR
+        context = {
+            "tab": tab,
+            "form": form,
+            "can_admit": user_has_role(request.user, *ADMIT),
+            "is_doctor": is_doctor,
+        }
         if tab == "inpatients":
+            # Doctors see every inpatient (they cover for each other); "My inpatients"
+            # narrows the list to the ones they admitted.
             context["admissions"] = selectors.current_admissions(
-                ward=filters.get("ward"), q=filters.get("q")
+                ward=filters.get("ward"),
+                q=filters.get("q"),
+                admitting_doctor_user=request.user if is_doctor and filters.get("mine") else None,
             )
         elif tab == "discharged":
             context["admissions"] = selectors.discharged_admissions(

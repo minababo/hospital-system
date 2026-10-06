@@ -224,14 +224,18 @@ def monthly_attendance_summary(year, month):
     return list(rows.values())
 
 
+def leave_taken_between(start, end):
+    """Approved leave days per leave type within [start, end], clipped to the range."""
+    totals = Counter({value: 0 for value in LeaveType.values})
+    approved = LeaveRequest.objects.filter(overlaps(start, end), status=LeaveStatus.APPROVED)
+    for leave in approved:
+        totals[leave.leave_type] += _clipped_days(leave.start_date, leave.end_date, start, end)
+    return dict(totals)
+
+
 def leave_taken_by_type(year):
     """Approved leave days per leave type within the year (clipped to the year)."""
-    first, last = date_type(year, 1, 1), date_type(year, 12, 31)
-    totals = Counter({value: 0 for value in LeaveType.values})
-    approved = LeaveRequest.objects.filter(overlaps(first, last), status=LeaveStatus.APPROVED)
-    for leave in approved:
-        totals[leave.leave_type] += _clipped_days(leave.start_date, leave.end_date, first, last)
-    return dict(totals)
+    return leave_taken_between(date_type(year, 1, 1), date_type(year, 12, 31))
 
 
 def leave_by_employee(employee):

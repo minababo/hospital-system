@@ -129,8 +129,10 @@ def _search(admissions, q):
     return admissions.filter(matches)
 
 
-def current_admissions(*, ward=None, q=None):
+def current_admissions(*, ward=None, q=None, admitting_doctor_user=None):
     admissions = _admissions().filter(status=AdmissionStatus.ADMITTED)
+    if admitting_doctor_user is not None:
+        admissions = admissions.filter(admitting_doctor__user=admitting_doctor_user)
     if ward is not None:
         in_ward = BedAssignment.objects.filter(
             admission=OuterRef("pk"), ended_at__isnull=True, bed__ward=ward
