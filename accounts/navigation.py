@@ -14,16 +14,19 @@ STOCK_ALERTS = ("Stock alerts", "pharmacy:alerts")
 BILLING = ("Billing", "billing:invoice_list")
 LABORATORY = ("Laboratory", "laboratory:worklist")
 LAB_TESTS = ("Lab tests", "laboratory:test_list")
+ADMISSIONS = ("Admissions", "admissions:admission_list")
 
 NAV_ITEMS = {
     Role.ADMIN: [
         DASHBOARD,
         PATIENTS,
         APPOINTMENTS,
+        ADMISSIONS,
         LABORATORY,
         BILLING,
         ("Users", "accounts:user_list"),
         ("Departments", "doctors:department_list"),
+        ("Wards & beds", "admissions:ward_list"),
         DOCTORS,
         MEDICINES,
         INVENTORY,
@@ -35,6 +38,7 @@ NAV_ITEMS = {
         DASHBOARD,
         PATIENTS,
         APPOINTMENTS,
+        ADMISSIONS,
         LABORATORY,
         ("My profile", "doctors:me"),
         CHANGE_PASSWORD,
@@ -43,6 +47,7 @@ NAV_ITEMS = {
         DASHBOARD,
         PATIENTS,
         APPOINTMENTS,
+        ADMISSIONS,
         LABORATORY,
         DOCTORS,
         CHANGE_PASSWORD,
@@ -51,6 +56,7 @@ NAV_ITEMS = {
         DASHBOARD,
         PATIENTS,
         APPOINTMENTS,
+        ADMISSIONS,
         LABORATORY,
         BILLING,
         DOCTORS,

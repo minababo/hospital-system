@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "records",
     "billing",
     "laboratory",
+    "admissions",
 ]
 
 MIDDLEWARE = [
@@ -131,6 +132,9 @@ APPOINTMENT_BOOKING_WINDOW_DAYS = env.int("APPOINTMENT_BOOKING_WINDOW_DAYS", def
 
 # Batches expiring within this many days show as "expiring soon" in the pharmacy.
 PHARMACY_EXPIRY_WARNING_DAYS = env.int("PHARMACY_EXPIRY_WARNING_DAYS", default=90)
+
+# How far back admission, transfer and discharge times may be entered.
+ADMISSION_BACKDATE_DAYS = env.int("ADMISSION_BACKDATE_DAYS", default=7)
 
 # Render sets RENDER=true on its servers.
 ON_RENDER = env.bool("RENDER", default=False)

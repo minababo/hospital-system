@@ -238,6 +238,33 @@ depend on medical records. Only `pharmacy/dispensing.py` and `dispensing_selecto
 prescriptions, stock and billing, and prescription statuses are changed through the records
 app (`records.services.update_dispensing_status`).
 
+## Admissions (inpatient and outpatient)
+
+- **Outpatients** are the appointments and consultations described above. The Admissions page
+  has an "Outpatients today" tab listing today's appointments.
+- **Inpatients** are admitted to a bed in a ward, from an outpatient visit ("Admit patient" on the
+  appointment), an emergency, a referral or directly. A patient can have only one current
+  admission and a bed only one patient; whether a bed is free is worked out from the bed history,
+  not stored separately. Nurses and doctors can move a patient to another bed and add progress
+  notes; a doctor discharges with a discharge summary, which can be printed.
+
+**Bed charges.** Each bed period is billed per night (counted on Sri Lankan calendar dates) at the
+ward's daily rate when the patient entered that bed. The charge is posted when the patient leaves
+the bed (transfer or discharge). Every admission is billed at least one day: a stay with no
+overnight is charged one day at the last bed's rate.
+
+| Action | Who |
+|--------|-----|
+| Inpatient list, bed board, admission details | Admin, Doctor, Nurse, Receptionist (progress notes and discharge summaries hidden from reception) |
+| Admit a patient | Doctor, Nurse, Receptionist |
+| Transfer bed, add progress notes | Doctor, Nurse |
+| Discharge | Doctor |
+| Print discharge summary | Admin, Doctor, Nurse |
+| Wards and beds (set up, rates, activate/deactivate) | Admin |
+
+**Out of scope for this version:** inpatient prescriptions and medication charts, lab orders
+raised from an admission (outside a consultation), and interim bills during a long stay.
+
 ## File storage
 
 Patient documents (PDF, JPG, PNG up to `MAX_UPLOAD_MB`) are stored in a **private** Supabase
@@ -278,6 +305,7 @@ Environment variables set on Render:
 | `MAX_UPLOAD_MB` | Largest upload allowed in MB (default 5) |
 | `APPOINTMENT_BOOKING_WINDOW_DAYS` | How many days ahead appointments can be booked (default 60) |
 | `PHARMACY_EXPIRY_WARNING_DAYS` | Days before expiry that a batch counts as "expiring soon" (default 90) |
+| `ADMISSION_BACKDATE_DAYS` | How far back admission, transfer and discharge times may be entered (default 7) |
 
 Render sets `RENDER_EXTERNAL_HOSTNAME` and `PORT` itself. The hostname is added to
 `ALLOWED_HOSTS` and `CSRF_TRUSTED_ORIGINS` automatically.

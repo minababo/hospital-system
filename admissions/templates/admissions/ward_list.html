@@ -1,0 +1,40 @@
+{% extends "layouts/app.html" %}
+{% load money %}
+
+{% block title %}Wards & beds{% endblock %}
+
+{% block content %}
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-2xl font-semibold text-slate-900">Wards & beds</h1>
+    <a href="{% url 'admissions:ward_create' %}" class="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Add ward</a>
+  </div>
+
+  <div class="mt-6 overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
+    <table class="min-w-full divide-y divide-slate-200 text-sm">
+      <thead class="bg-slate-50 text-left text-xs font-semibold tracking-wide text-slate-500 uppercase">
+        <tr><th class="px-4 py-3">Ward</th><th class="px-4 py-3">Type</th><th class="px-4 py-3">Department</th><th class="px-4 py-3 text-right">Daily rate</th><th class="px-4 py-3 text-right">Beds</th><th class="px-4 py-3 text-right">Occupied</th><th class="px-4 py-3">Status</th><th class="px-4 py-3 text-right">Actions</th></tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for ward in wards %}
+          <tr>
+            <td class="px-4 py-3 font-medium"><a href="{% url 'admissions:bed_list' ward.pk %}" class="hover:underline">{{ ward.name }}</a></td>
+            <td class="px-4 py-3">{{ ward.get_ward_type_display }}</td>
+            <td class="px-4 py-3">{{ ward.department|default:"—" }}</td>
+            <td class="px-4 py-3 text-right whitespace-nowrap">{{ ward.daily_rate|rupees }}</td>
+            <td class="px-4 py-3 text-right">{{ ward.bed_count }}</td>
+            <td class="px-4 py-3 text-right">{{ ward.occupied_count }}</td>
+            <td class="px-4 py-3">{% if ward.is_active %}<span class="rounded-full bg-green-50 px-2 py-0.5 text-xs text-green-700">Active</span>{% else %}<span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">Inactive</span>{% endif %}</td>
+            <td class="px-4 py-3">
+              <div class="flex justify-end gap-3 whitespace-nowrap">
+                <a href="{% url 'admissions:ward_update' ward.pk %}" class="text-slate-700 hover:underline">Edit</a>
+                <form method="post" action="{% url 'admissions:ward_toggle_active' ward.pk %}">{% csrf_token %}<button type="submit" class="text-slate-700 hover:underline">{% if ward.is_active %}Deactivate{% else %}Activate{% endif %}</button></form>
+              </div>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="8" class="px-4 py-6 text-center text-slate-500">No wards yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}
