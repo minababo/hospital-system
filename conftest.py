@@ -18,6 +18,7 @@ from laboratory.models import LabOrder, LabOrderItem, LabTest, LabTestParameter
 from patients.models import Patient
 from pharmacy.models import Medicine, MovementType, StockBatch, StockMovement
 from records.models import MedicalRecord, Prescription, PrescriptionItem, RecordStatus
+from staff.models import Employee, LeaveRequest
 
 
 @pytest.fixture(autouse=True)
@@ -398,6 +399,48 @@ def make_admission(make_patient, make_bed, make_doctor, make_user):
         return admission
 
     return _make_admission
+
+
+@pytest.fixture
+def make_employee(make_department):
+    """An ACTIVE employee who joined a year ago (no login unless user= is given)."""
+    counter = itertools.count(1)
+
+    def _make_employee(user=None, **kwargs):
+        n = next(counter)
+        kwargs.setdefault("first_name", "Staff")
+        kwargs.setdefault("last_name", f"Member{n}")
+        kwargs.setdefault("phone", "0771234567")
+        kwargs.setdefault("designation", "Staff Nurse")
+        kwargs.setdefault("category", "NURSING")
+        kwargs.setdefault("employment_type", "PERMANENT")
+        kwargs.setdefault("date_joined", timezone.localdate() - timedelta(days=365))
+        if "department" not in kwargs:
+            kwargs["department"] = make_department()
+        return Employee.objects.create(user=user, **kwargs)
+
+    return _make_employee
+
+
+@pytest.fixture
+def make_leave(make_employee, make_user):
+    """A leave request created directly (no service checks). Default: APPROVED annual
+    leave for 3 days starting in 10 days."""
+
+    def _make_leave(employee=None, start=None, end=None, **kwargs):
+        start = start or timezone.localdate() + timedelta(days=10)
+        kwargs.setdefault("leave_type", "ANNUAL")
+        kwargs.setdefault("reason", "Family event")
+        kwargs.setdefault("status", "APPROVED")
+        kwargs.setdefault("requested_by", make_user(role=Role.ADMIN))
+        return LeaveRequest.objects.create(
+            employee=employee or make_employee(),
+            start_date=start,
+            end_date=end or start + timedelta(days=2),
+            **kwargs,
+        )
+
+    return _make_leave
 
 
 # Smallest byte strings that pass the file-type checks in common/validators.py.

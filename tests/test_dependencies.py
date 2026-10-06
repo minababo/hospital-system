@@ -80,3 +80,33 @@ def test_no_app_imports_admissions(app):
     ]
 
     assert offenders == []
+
+
+# Nothing imports staff. The "My leave" sidebar link uses the user.employee_profile
+# reverse relation, so accounts doesn't need to import staff either.
+NOT_STAFF = [
+    "accounts",
+    "admissions",
+    "appointments",
+    "billing",
+    "common",
+    "config",
+    "doctors",
+    "laboratory",
+    "patients",
+    "pharmacy",
+    "records",
+    "reports",
+]
+
+
+@pytest.mark.parametrize("app", NOT_STAFF)
+def test_no_app_imports_staff(app):
+    pattern = re.compile(r"^\s*(from|import)\s+staff\b", re.MULTILINE)
+    offenders = [
+        str(path.relative_to(ROOT))
+        for path in (ROOT / app).rglob("*.py")
+        if pattern.search(path.read_text(encoding="utf-8"))
+    ]
+
+    assert offenders == []
