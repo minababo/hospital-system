@@ -24,6 +24,7 @@ from appointments.selectors import todays_appointments
 from billing import permissions as billing_permissions
 from billing.models import Charge, Invoice, PaymentMethod
 from billing.selectors import MONEY, OPEN_STATUSES, ZERO, payments_received, with_totals
+from common.dates import local_day_bounds, local_range_bounds, this_month
 from laboratory import permissions as laboratory_permissions
 from laboratory.models import LabOrder, OrderStatus, Priority
 from laboratory.selectors import pending_requests_count
@@ -34,7 +35,6 @@ from pharmacy.models import Dispense
 from pharmacy.selectors import pharmacy_alerts_summary
 from records.models import MedicalRecord, Prescription, PrescriptionStatus, RecordStatus
 from reports import permissions as report_permissions
-from reports.dates import local_day_bounds, local_range_bounds, this_month
 from staff import permissions as staff_permissions
 from staff.models import Attendance, AttendanceStatus
 from staff.selectors import pending_leave_count
