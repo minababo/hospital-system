@@ -124,6 +124,13 @@
       });
     })();
 
+    // A form that came back with errors marks its section with data-scroll-target:
+    // show that section instead of the top of a long page (unless the URL has a #anchor).
+    (function () {
+      var target = document.querySelector("[data-scroll-target]");
+      if (target && !window.location.hash) target.scrollIntoView({ block: "start" });
+    })();
+
     // Message dismiss buttons (without JavaScript the messages simply stay).
     document.querySelectorAll("[data-dismiss]").forEach(function (button) {
       button.hidden = false;

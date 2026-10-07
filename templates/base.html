@@ -99,6 +99,10 @@
       /* Page header (rendered by layouts/app.html from the page_* blocks) */
       .page-title { @apply text-2xl font-semibold tracking-tight text-slate-900; }
       .page-subtitle { @apply mt-1 text-sm text-slate-500; }
+
+      /* A section that links can jump to (#diagnoses, ...): keep its heading clear of
+         the sticky top bar. */
+      .section-anchor { @apply scroll-mt-20; }
     }
 
     /* Pages written before the shared header started their content with a top margin;
