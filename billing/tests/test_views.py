@@ -99,8 +99,27 @@ URLS = [
     ),
     ("billing:invoice_void", lambda o: [o["draft"].pk], "post", {"reason": "x"}, VOID, 302),
     ("billing:payment_void", lambda o: [o["payment"].pk], "post", {"reason": "x"}, VOID, 302),
+    # Charge correction pages: GET shows the form, POST saves (no JavaScript needed).
+    ("billing:charge_void", lambda o: [o["unbilled"].pk], "get", None, VOID_CHARGE, 200),
+    ("billing:charge_edit", lambda o: [o["unbilled"].pk], "get", None, ACCOUNTS, 200),
+    (
+        "billing:charge_edit",
+        lambda o: [o["unbilled"].pk],
+        "post",
+        {
+            "description": "Dressing (large)",
+            "charge_type": "OTHER",
+            "quantity": 2,
+            "unit_price": "300",
+            "reason": "Wrong size entered",
+        },
+        ACCOUNTS,
+        302,
+    ),
 ]
-POST_ONLY = [url for url in URLS if url[2] == "post"]
+# These answer GET with a form page; every other POST action rejects GET.
+GET_AND_POST_PAGES = {"billing:charge_void", "billing:charge_edit"}
+POST_ONLY = [url for url in URLS if url[2] == "post" and url[0] not in GET_AND_POST_PAGES]
 
 
 @pytest.mark.parametrize(("name", "args", "method", "data", "_roles", "_status"), URLS)

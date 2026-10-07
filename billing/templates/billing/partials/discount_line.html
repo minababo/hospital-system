@@ -1,0 +1,1 @@
+{% load money %}Discount: {{ invoice.discount|rupees }} — {{ invoice.discount_reason }}{% if invoice.discount_set_by %} — set by {{ invoice.discount_set_by.get_full_name|default:invoice.discount_set_by.username }} on {{ invoice.discount_set_at|date:"d M Y H:i" }}{% endif %}

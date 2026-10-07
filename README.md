@@ -174,11 +174,34 @@ payments, never stored separately.
 | View invoices, patient billing, print invoice and receipts | Admin, Accountant, Receptionist |
 | Add charges, create and issue invoices, receive payments | Accountant, Receptionist (cashiers) |
 | Edit draft invoices (remove charges, discounts) | Accountant |
-| Void an unbilled charge | Accountant, Admin |
+| Correct a manual charge (description, type, quantity, price) | Accountant |
+| Void an unbilled or draft-invoice charge | Accountant, Admin |
 | Void invoices and payments | Admin only |
 
 **Separation of duties:** the people who take money can't undo it. Voiding a payment or invoice
-needs the admin, and every void records who did it, when and why.
+needs the admin, and every void records who did it, when and why. For the same reason the admin
+doesn't give discounts: the accountant adjusts bills and the admin reverses money, so no single
+role can both reduce a bill and undo the record of it.
+
+**Correcting charges**
+
+- *Manual charges* (typed in on the billing pages) can be corrected while they are unbilled or on
+  a draft invoice: **Edit** next to the charge, then a reason. The amount is recalculated and the
+  change (old → new values and the reason) goes to the audit log.
+- *System charges* (consultations, lab tests, dispensed medicines, bed stays) are never edited:
+  they must match the clinical record they came from. To correct one, **Void** it (with a reason)
+  or give a discount on the invoice.
+- Edit and Void open their own page with a reason field, so they work without JavaScript.
+- Once an invoice is issued, its charges can't be changed; the admin voids the invoice first.
+
+**Duplicate warning:** adding a manual charge that matches an existing one for the same patient
+(same type, the same description ignoring case and spacing, the same unit price) shows the
+matching charges and an **Add anyway** box. Matches count while they are unbilled, on a draft, or
+were added today; an older charge on an issued invoice is treated as a real repeat. Charges added
+anyway are marked in the audit log.
+
+**Discount accountability:** an invoice shows "Discount: Rs. X — reason — set by <name> on
+<date and time>". Invoices discounted before this was recorded show the amount and reason only.
 
 ## Laboratory
 
