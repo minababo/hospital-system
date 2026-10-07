@@ -77,6 +77,7 @@ closes.
 | Module | URL | Who can use it |
 |--------|-----|----------------|
 | Users | `/accounts/users/` | Admin |
+| Audit log | `/audit/` | Admin |
 | Patients | `/patients/` | View, search, upload documents: Admin, Receptionist, Doctor, Nurse. Register/edit: Admin, Receptionist. Medical history: Admin, Doctor, Nurse. Delete documents: Admin |
 | Departments | `/doctors/departments/` | Admin (create, edit, activate/deactivate) |
 | Doctors | `/doctors/` | View: Admin, Receptionist, Nurse, Doctor. Add/edit doctors and schedules: Admin |
@@ -323,6 +324,37 @@ current selling price.
 prefixed with `'`, so a spreadsheet never runs it as a formula. Money is written as plain numbers
 (e.g. `1500.00`).
 
+## Audit log
+
+Every create, update, delete and status change is recorded, plus logins, logouts, failed
+logins, password changes and patient document views. Admins read the log at **`/audit/`**
+(sidebar: *Audit log*). Each patient's page has an *Audit trail* button for admins that opens
+the log filtered to that patient.
+
+- **Filters:** date range (Sri Lankan calendar days), user, role, action, module, event text,
+  patient MRN (`P000123`) and a search over the object and message. `?export=csv` downloads the
+  filtered list (at most 10,000 rows, newest first, with the same CSV safety as reports).
+- **Entry detail** (`/audit/<id>/`): who (name and role at the time, kept even if the user is
+  later renamed or deleted), when, IP address, browser, the object, the patient and a table of
+  changed fields (old → new).
+- **Event names** are `<app>.<model>.<past-tense verb>`, e.g. `appointments.appointment.cancelled`,
+  `billing.payment.recorded`, `pharmacy.prescription.dispensed`.
+- **Same transaction:** each service writes its audit entry as its last step inside its
+  `transaction.atomic()` block. If the action fails, the entry is rolled back with it, so the log
+  never shows something that didn't happen.
+- **Updates store only what changed** (`{field: [old, new]}`); money, dates and times are stored
+  as text, linked rows as `"<name> (#<id>)"`, files by their stored name only.
+- **Never logged:** passwords (not even hashed), `last_login`, file contents. A failed login
+  records only the username that was typed.
+- **Immutable:** entries can't be edited or deleted through Django (model `save()`/`delete()` and
+  queryset `update()`/`delete()` raise; the admin page is read-only). The only bulk change allowed
+  is Django clearing a link when a user or patient is deleted. Raw SQL could still change rows;
+  the next step is a PostgreSQL trigger that rejects `UPDATE`/`DELETE` on `audit_auditlog`.
+- **IP address:** taken from the connection (`REMOTE_ADDR`). Behind Render's proxy that is the
+  proxy's address, so set `AUDIT_TRUST_X_FORWARDED_FOR=True` on Render to use the first
+  `X-Forwarded-For` address instead. Leave it `False` anywhere without a trusted proxy, because
+  any client can send that header.
+
 ## File storage
 
 Patient documents (PDF, JPG, PNG up to `MAX_UPLOAD_MB`) are stored in a **private** Supabase
@@ -364,6 +396,7 @@ Environment variables set on Render:
 | `APPOINTMENT_BOOKING_WINDOW_DAYS` | How many days ahead appointments can be booked (default 60) |
 | `PHARMACY_EXPIRY_WARNING_DAYS` | Days before expiry that a batch counts as "expiring soon" (default 90) |
 | `ADMISSION_BACKDATE_DAYS` | How far back admission, transfer and discharge times may be entered (default 7) |
+| `AUDIT_TRUST_X_FORWARDED_FOR` | `True` on Render: audit IPs come from the proxy's `X-Forwarded-For` header (default `False`) |
 
 Render sets `RENDER_EXTERNAL_HOSTNAME` and `PORT` itself. The hostname is added to
 `ALLOWED_HOSTS` and `CSRF_TRUSTED_ORIGINS` automatically.
