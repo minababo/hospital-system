@@ -1,5 +1,5 @@
 {# Shown inside the records consultation/history pages via {% record_lab_section %}. #}
-<section class="mt-4 card card-body">
+<section {% if not read_only %}id="lab-tests" {% endif %}class="section-anchor mt-4 card card-body">
   <h2 class="text-lg font-semibold text-slate-900">Laboratory</h2>
   <ul class="mt-3 space-y-3 text-sm">
     {% for order, items in orders %}
@@ -9,15 +9,11 @@
           <span>{% include "laboratory/partials/status_badge.html" %}</span>
         </div>
         {% for item, rows in items %}
-          <div class="mt-2">
+          <div class="mt-3">
             <p class="font-medium text-slate-900">{{ item.test.name }}</p>
+            {# Clinicians see results once the lab has released them. #}
             {% if order.status == "COMPLETED" %}
-              <ul class="mt-1 grid gap-x-6 sm:grid-cols-2">
-                {% for parameter, result in rows %}
-                  <li class="flex justify-between gap-2"><span class="text-slate-500">{{ parameter.name }}</span><span>{% include "laboratory/partials/result_value.html" %} {{ result.unit }}</span></li>
-                {% endfor %}
-              </ul>
-              {% if item.comment %}<p class="mt-1 text-xs text-slate-600">{{ item.comment }}</p>{% endif %}
+              <div class="mt-2">{% include "laboratory/partials/results_table.html" %}</div>
             {% endif %}
           </div>
         {% endfor %}
