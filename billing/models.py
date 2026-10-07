@@ -94,6 +94,21 @@ class Charge(models.Model):
     def __str__(self):
         return f"{self.description} ({self.amount})"
 
+    @property
+    def is_manual(self):
+        """Typed in by billing staff. System charges (consultation, lab, pharmacy, bed)
+        have a source and mirror a clinical record, so they are never edited."""
+        return self.source_id is None
+
+    @property
+    def is_editable(self):
+        """Can billing.services.edit_charge change this charge? (Its error says why not.)"""
+        return (
+            self.is_manual
+            and not self.is_voided
+            and (self.invoice is None or self.invoice.status == InvoiceStatus.DRAFT)
+        )
+
     def clean(self):
         self.description = (self.description or "").strip()
         if self.quantity is not None and self.unit_price is not None:
@@ -127,6 +142,16 @@ class Invoice(models.Model):
         validators=[MinValueValidator(Decimal("0"))],
     )
     discount_reason = models.CharField(max_length=255, blank=True)
+    # Who set the current discount and when. Empty for invoices discounted before these
+    # fields existed (and whenever the discount is 0), so there is no constraint on them.
+    discount_set_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    discount_set_at = models.DateTimeField(null=True, blank=True)
     notes = models.TextField(blank=True)
     issued_at = models.DateTimeField(null=True, blank=True)
     issued_by = _user_fk()
