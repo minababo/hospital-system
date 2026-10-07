@@ -18,6 +18,7 @@ urlpatterns = [
         views.InvoiceCreateView.as_view(),
         name="invoice_create",
     ),
+    path("charges/<int:pk>/edit/", views.ChargeEditView.as_view(), name="charge_edit"),
     path("charges/<int:pk>/void/", views.ChargeVoidView.as_view(), name="charge_void"),
     path("invoices/<int:pk>/", views.InvoiceDetailView.as_view(), name="invoice_detail"),
     path("invoices/<int:pk>/print/", views.InvoicePrintView.as_view(), name="invoice_print"),

@@ -21,17 +21,48 @@ class InvoiceCreateForm(forms.Form):
         )
 
 
+# Consultations come from completed appointments, never from manual entry or edits.
+MANUAL_CHARGE_TYPES = [
+    choice for choice in ChargeType.choices if choice[0] != ChargeType.CONSULTATION
+]
+
+
 class ManualChargeForm(forms.ModelForm):
+    # Shown only after the service reports a possible duplicate (see the templates).
+    confirm_duplicate = forms.BooleanField(
+        required=False, label="Add anyway (this is a separate charge, not a repeat)"
+    )
+
     class Meta:
         model = Charge
         fields = ("charge_type", "description", "quantity", "unit_price")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Consultations come from completed appointments, not manual entry.
-        self.fields["charge_type"].choices = [
-            choice for choice in ChargeType.choices if choice[0] != ChargeType.CONSULTATION
-        ]
+        self.fields["charge_type"].choices = MANUAL_CHARGE_TYPES
+
+
+class ChargeEditForm(forms.Form):
+    """A plain form (not a ModelForm), so the charge object isn't changed before
+    billing.services.edit_charge locks the row and checks it."""
+
+    description = forms.CharField(max_length=255)
+    charge_type = forms.ChoiceField(choices=MANUAL_CHARGE_TYPES, label="Type")
+    quantity = forms.IntegerField(min_value=1)
+    unit_price = forms.DecimalField(
+        label="Unit price (Rs.)", min_value=Decimal("0"), max_digits=10, decimal_places=2
+    )
+    reason = forms.CharField(max_length=200, label="Reason for the correction")
+
+    @classmethod
+    def for_charge(cls, charge, data=None):
+        initial = {
+            "description": charge.description,
+            "charge_type": charge.charge_type,
+            "quantity": charge.quantity,
+            "unit_price": charge.unit_price,
+        }
+        return cls(data, initial=initial)
 
 
 class DiscountForm(forms.Form):
@@ -53,6 +84,10 @@ class PaymentForm(forms.Form):
 
 class VoidForm(forms.Form):
     reason = forms.CharField(label="Reason", max_length=255)
+
+
+class ChargeVoidForm(forms.Form):
+    reason = forms.CharField(label="Reason for voiding", max_length=255)
 
 
 class InvoiceFilterForm(forms.Form):
