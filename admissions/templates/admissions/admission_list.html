@@ -2,15 +2,16 @@
 
 {% block title %}Admissions{% endblock %}
 
-{% block content %}
-  <div class="flex flex-wrap items-center justify-between gap-3">
-    <h1 class="text-2xl font-semibold text-slate-900">Admissions</h1>
-    <div class="flex gap-2">
-      <a href="{% url 'admissions:bed_board' %}" class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">Bed board</a>
-      {% if can_admit %}<a href="{% url 'admissions:admit' %}" class="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Admit patient</a>{% endif %}
-    </div>
+{% block page_title %}Admissions{% endblock %}
+{% block page_actions %}
+  <div class="flex gap-2">
+    <a href="{% url 'admissions:bed_board' %}" class="btn btn-secondary">Bed board</a>
+    {% if can_admit %}<a href="{% url 'admissions:admit' %}" class="btn btn-primary">Admit patient</a>{% endif %}
   </div>
 
+{% endblock %}
+
+{% block content %}
   <nav class="mt-6 flex gap-1 border-b border-slate-200 text-sm">
     <a href="?tab=inpatients" class="rounded-t-md px-4 py-2 {% if tab == 'inpatients' %}border border-b-white border-slate-200 bg-white font-medium{% else %}text-slate-600{% endif %}">Inpatients</a>
     <a href="?tab=discharged" class="rounded-t-md px-4 py-2 {% if tab == 'discharged' %}border border-b-white border-slate-200 bg-white font-medium{% else %}text-slate-600{% endif %}">Discharged</a>
@@ -22,15 +23,15 @@
       <input type="hidden" name="tab" value="{{ tab }}">
       <input type="search" name="q" value="{{ form.q.value|default:'' }}" placeholder="Patient name, MRN or ADM-000123" class="sm:col-span-2">
       {% if tab == "inpatients" %}{{ form.ward }}{% if is_doctor %}<label class="flex items-center gap-2 text-sm">{{ form.mine }} My inpatients</label>{% endif %}{% else %}{{ form.date_from }}{{ form.date_to }}{% endif %}
-      <button type="submit" class="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Filter</button>
+      <button type="submit" class="btn btn-primary">Filter</button>
     </form>
 
-    <div class="mt-4 overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
-      <table class="min-w-full divide-y divide-slate-200 text-sm">
-        <thead class="bg-slate-50 text-left text-xs font-semibold tracking-wide text-slate-500 uppercase">
+    <div class="mt-4 table-wrap">
+      <table class="table">
+        <thead>
           <tr><th class="px-4 py-3">Admission</th><th class="px-4 py-3">Patient</th><th class="px-4 py-3">Ward / bed</th><th class="px-4 py-3">Admitted</th><th class="px-4 py-3">{% if tab == "inpatients" %}Days{% else %}Discharged{% endif %}</th><th class="px-4 py-3">Doctor</th></tr>
         </thead>
-        <tbody class="divide-y divide-slate-100">
+        <tbody>
           {% for admission in admissions %}
             <tr>
               <td class="px-4 py-3 font-mono"><a href="{% url 'admissions:admission_detail' admission.pk %}" class="hover:underline">{{ admission.number }}</a></td>
@@ -41,18 +42,18 @@
               <td class="px-4 py-3">{{ admission.admitting_doctor }}</td>
             </tr>
           {% empty %}
-            <tr><td colspan="6" class="px-4 py-6 text-center text-slate-500">No admissions found.</td></tr>
+            <tr><td colspan="6">{% include "partials/empty_state.html" with message="No admissions found." %}</td></tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
   {% else %}
-    <div class="mt-4 overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
-      <table class="min-w-full divide-y divide-slate-200 text-sm">
-        <thead class="bg-slate-50 text-left text-xs font-semibold tracking-wide text-slate-500 uppercase">
+    <div class="mt-4 table-wrap">
+      <table class="table">
+        <thead>
           <tr><th class="px-4 py-3">Time</th><th class="px-4 py-3">Patient</th><th class="px-4 py-3">Doctor</th><th class="px-4 py-3">Status</th></tr>
         </thead>
-        <tbody class="divide-y divide-slate-100">
+        <tbody>
           {% for appointment in appointments %}
             <tr>
               <td class="px-4 py-3 whitespace-nowrap"><a href="{% url 'appointments:appointment_detail' appointment.pk %}" class="hover:underline">{{ appointment.start_time|time:"H:i" }}</a></td>
@@ -61,7 +62,7 @@
               <td class="px-4 py-3">{% include "appointments/partials/status_badge.html" with status=appointment.status label=appointment.get_status_display %}</td>
             </tr>
           {% empty %}
-            <tr><td colspan="4" class="px-4 py-6 text-center text-slate-500">No outpatient appointments today.</td></tr>
+            <tr><td colspan="4">{% include "partials/empty_state.html" with message="No outpatient appointments today." %}</td></tr>
           {% endfor %}
         </tbody>
       </table>

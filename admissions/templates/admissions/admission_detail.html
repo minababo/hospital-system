@@ -3,21 +3,22 @@
 
 {% block title %}Admission {{ admission.number }}{% endblock %}
 
-{% block content %}
-  <a href="{% url 'admissions:admission_list' %}" class="text-sm text-slate-600 hover:text-slate-900">&larr; Back to admissions</a>
-  <div class="mt-2 flex flex-wrap items-center justify-between gap-3">
-    <h1 class="text-2xl font-semibold text-slate-900">Admission <span class="font-mono">{{ admission.number }}</span></h1>
-    <div class="flex flex-wrap items-center gap-2">
-      {% include "admissions/partials/status_badge.html" %}
-      {% if can_care %}<a href="{% url 'admissions:transfer' admission.pk %}" class="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50">Transfer bed</a>{% endif %}
-      {% if can_discharge %}<a href="{% url 'admissions:discharge' admission.pk %}" class="rounded-md bg-green-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-green-600">Discharge</a>{% endif %}
-      {% if can_print %}<a href="{% url 'admissions:discharge_summary' admission.pk %}" target="_blank" rel="noopener" class="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50">Print discharge summary</a>{% endif %}
-    </div>
+{% block page_breadcrumb %}<a href="{% url 'admissions:admission_list' %}" class="text-sm text-slate-600 hover:text-slate-900">&larr; Back to admissions</a>{% endblock %}
+{% block page_title %}Admission <span class="font-mono">{{ admission.number }}</span>{% endblock %}
+{% block page_actions %}
+  <div class="flex flex-wrap items-center gap-2">
+    {% include "admissions/partials/status_badge.html" %}
+    {% if can_care %}<a href="{% url 'admissions:transfer' admission.pk %}" class="btn btn-secondary btn-sm">Transfer bed</a>{% endif %}
+    {% if can_discharge %}<a href="{% url 'admissions:discharge' admission.pk %}" class="btn btn-primary btn-sm">Discharge</a>{% endif %}
+    {% if can_print %}<a href="{% url 'admissions:discharge_summary' admission.pk %}" target="_blank" rel="noopener" class="btn btn-secondary btn-sm">Print discharge summary</a>{% endif %}
   </div>
 
+{% endblock %}
+
+{% block content %}
   <div class="mt-6">{% include "records/partials/patient_banner.html" %}</div>
 
-  <dl class="mt-4 grid gap-4 rounded-lg border border-slate-200 bg-white p-6 text-sm shadow-sm sm:grid-cols-2 lg:grid-cols-3">
+  <dl class="mt-4 grid gap-4 card card-body text-sm sm:grid-cols-2 lg:grid-cols-3">
     <div><dt class="text-slate-500">Current bed</dt><dd class="mt-1 font-medium">{{ admission.current_bed|default:"—" }}</dd></div>
     <div><dt class="text-slate-500">Admitting doctor</dt><dd class="mt-1 font-medium">{{ admission.admitting_doctor }}</dd></div>
     <div><dt class="text-slate-500">Source</dt><dd class="mt-1 font-medium">{{ admission.get_source_display }}{% if admission.appointment %} (<a href="{% url 'appointments:appointment_detail' admission.appointment.pk %}" class="underline">appointment</a>){% endif %}</dd></div>
@@ -28,13 +29,13 @@
     {% if show_notes and admission.discharge_summary %}<div class="sm:col-span-2 lg:col-span-3"><dt class="text-slate-500">Discharge summary</dt><dd class="mt-1 whitespace-pre-line">{{ admission.discharge_summary }}</dd></div>{% endif %}
   </dl>
 
-  <section class="mt-4 overflow-x-auto rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+  <section class="mt-4 card card-body overflow-x-auto">
     <h2 class="text-lg font-semibold text-slate-900">Bed history</h2>
-    <table class="mt-3 min-w-full divide-y divide-slate-200 text-sm">
-      <thead class="text-left text-xs font-semibold tracking-wide text-slate-500 uppercase">
+    <table class="mt-3 table">
+      <thead>
         <tr><th class="py-2 pr-4">Ward / bed</th><th class="py-2 pr-4">From</th><th class="py-2 pr-4">To</th><th class="py-2 pr-4 text-right">Nights</th><th class="py-2 text-right">Rate / night</th></tr>
       </thead>
-      <tbody class="divide-y divide-slate-100">
+      <tbody>
         {% for assignment, nights in assignments %}
           <tr>
             <td class="py-2 pr-4">{{ assignment.bed }}</td>
@@ -50,7 +51,7 @@
   </section>
 
   {% if show_notes %}
-    <section class="mt-4 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+    <section class="mt-4 card card-body">
       <h2 class="text-lg font-semibold text-slate-900">Progress notes</h2>
       {% if can_care %}
         <form method="post" action="{% url 'admissions:note_add' admission.pk %}" class="mt-3 space-y-3 rounded-md bg-slate-50 p-4">
@@ -59,7 +60,7 @@
             {% include "partials/form_field.html" with field=note_form.note_type %}
             <div class="sm:col-span-3">{% include "partials/form_field.html" with field=note_form.text %}</div>
           </div>
-          <button type="submit" class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50">Add note</button>
+          <button type="submit" class="btn btn-secondary btn-sm">Add note</button>
         </form>
       {% endif %}
       <ol class="mt-4 space-y-3 text-sm">
@@ -69,7 +70,7 @@
             <p class="mt-1 whitespace-pre-line">{{ note.text }}</p>
           </li>
         {% empty %}
-          <li class="text-slate-500">No notes yet.</li>
+          <li>{% include "partials/empty_state.html" with message="No notes yet." %}</li>
         {% endfor %}
       </ol>
     </section>

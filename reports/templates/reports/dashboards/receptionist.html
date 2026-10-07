@@ -2,18 +2,20 @@
 
 {% block title %}Receptionist Dashboard{% endblock %}
 
-{% block content %}
-  <div class="flex flex-wrap items-center justify-between gap-3">
-    <h1 class="text-2xl font-semibold text-slate-900">Receptionist Dashboard</h1>
-    <div class="flex flex-wrap gap-2">
-      <a href="{% url 'patients:patient_create' %}" class="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Register patient</a>
-      <a href="{% url 'appointments:book' %}" class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Book appointment</a>
-      <a href="{% url 'billing:patient_search' %}" class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Billing</a>
-    </div>
+{% block page_title %}Receptionist Dashboard{% endblock %}
+{% block page_actions %}
+  <div class="flex flex-wrap gap-2">
+    <a href="{% url 'patients:patient_create' %}" class="btn btn-primary">Register patient</a>
+    <a href="{% url 'appointments:book' %}" class="btn btn-secondary">Book appointment</a>
+    <a href="{% url 'billing:patient_search' %}" class="btn btn-secondary">Billing</a>
   </div>
+
+{% endblock %}
+
+{% block content %}
   {% include "reports/partials/cards.html" %}
 
-  <section class="mt-6 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+  <section class="mt-6 card card-body">
     <h2 class="text-lg font-semibold text-slate-900">Next appointments today</h2>
     <ul class="mt-3 divide-y divide-slate-100 text-sm">
       {% for appointment in upcoming %}
@@ -22,7 +24,7 @@
           {% include "appointments/partials/status_badge.html" with status=appointment.status label=appointment.get_status_display %}
         </li>
       {% empty %}
-        <li class="py-2 text-slate-500">No more appointments today.</li>
+        <li>{% include "partials/empty_state.html" with message="No more appointments today." %}</li>
       {% endfor %}
     </ul>
   </section>

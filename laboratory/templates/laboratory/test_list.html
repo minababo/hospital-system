@@ -3,28 +3,29 @@
 
 {% block title %}Lab tests{% endblock %}
 
-{% block content %}
-  <div class="flex flex-wrap items-center justify-between gap-3">
-    <h1 class="text-2xl font-semibold text-slate-900">Lab test catalog</h1>
-    <a href="{% url 'laboratory:test_create' %}" class="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Add test</a>
-  </div>
+{% block page_title %}Lab test catalog{% endblock %}
+{% block page_actions %}
+  <a href="{% url 'laboratory:test_create' %}" class="btn btn-primary">Add test</a>
 
+{% endblock %}
+
+{% block content %}
   <form method="get" class="mt-6 grid gap-3 sm:grid-cols-4">
     <input type="search" name="search" value="{{ filter_form.search.value|default:'' }}" placeholder="Code or name" class="sm:col-span-2">
     {{ filter_form.section }}
     {{ filter_form.is_active }}
     <div class="flex gap-2 sm:col-span-4">
-      <button type="submit" class="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Filter</button>
-      <a href="{% url 'laboratory:test_list' %}" class="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">Clear</a>
+      <button type="submit" class="btn btn-primary">Filter</button>
+      <a href="{% url 'laboratory:test_list' %}" class="btn btn-secondary">Clear</a>
     </div>
   </form>
 
-  <div class="mt-6 overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
-    <table class="min-w-full divide-y divide-slate-200 text-sm">
-      <thead class="bg-slate-50 text-left text-xs font-semibold tracking-wide text-slate-500 uppercase">
+  <div class="mt-6 table-wrap">
+    <table class="table">
+      <thead>
         <tr><th class="px-4 py-3">Code</th><th class="px-4 py-3">Name</th><th class="px-4 py-3">Section</th><th class="px-4 py-3">Specimen</th><th class="px-4 py-3">Parameters</th><th class="px-4 py-3 text-right">Price</th><th class="px-4 py-3">Status</th><th class="px-4 py-3 text-right">Actions</th></tr>
       </thead>
-      <tbody class="divide-y divide-slate-100">
+      <tbody>
         {% for test in tests %}
           <tr>
             <td class="px-4 py-3 font-mono">{{ test.code }}</td>
@@ -33,7 +34,7 @@
             <td class="px-4 py-3">{{ test.get_specimen_type_display }}</td>
             <td class="px-4 py-3">{{ test.parameters.all|length }}{% if not test.parameters.all %} <span class="text-xs text-amber-700">(not orderable)</span>{% endif %}</td>
             <td class="px-4 py-3 text-right whitespace-nowrap">{{ test.price|rupees }}</td>
-            <td class="px-4 py-3">{% if test.is_active %}<span class="rounded-full bg-green-50 px-2 py-0.5 text-xs text-green-700">Active</span>{% else %}<span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">Inactive</span>{% endif %}</td>
+            <td class="px-4 py-3">{% if test.is_active %}<span class="badge badge-success">Active</span>{% else %}<span class="badge badge-neutral">Inactive</span>{% endif %}</td>
             <td class="px-4 py-3">
               <div class="flex justify-end gap-3 whitespace-nowrap">
                 <a href="{% url 'laboratory:test_update' test.pk %}" class="text-slate-700 hover:underline">Edit</a>
@@ -44,7 +45,7 @@
             </td>
           </tr>
         {% empty %}
-          <tr><td colspan="8" class="px-4 py-6 text-center text-slate-500">No tests found.</td></tr>
+          <tr><td colspan="8">{% include "partials/empty_state.html" with message="No tests found." %}</td></tr>
         {% endfor %}
       </tbody>
     </table>

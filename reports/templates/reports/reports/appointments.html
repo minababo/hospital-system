@@ -27,10 +27,10 @@
 </div>
 
 <h2 class="mt-6 font-semibold">By doctor</h2>
-<div class="mt-2 overflow-x-auto rounded-lg border border-slate-200 bg-white">
-  <table class="min-w-full divide-y divide-slate-200 text-sm">
-    <thead class="bg-slate-50 text-left text-xs font-semibold text-slate-500 uppercase"><tr><th class="px-3 py-2">Doctor</th><th class="px-3 py-2">Department</th><th class="num px-3 py-2 text-right">Total</th><th class="num px-3 py-2 text-right">Completed</th><th class="num px-3 py-2 text-right">Cancelled</th><th class="num px-3 py-2 text-right">No-show</th></tr></thead>
-    <tbody class="divide-y divide-slate-100">
+<div class="mt-2 table-wrap">
+  <table class="table">
+    <thead><tr><th class="px-3 py-2">Doctor</th><th class="px-3 py-2">Department</th><th class="num px-3 py-2 text-right">Total</th><th class="num px-3 py-2 text-right">Completed</th><th class="num px-3 py-2 text-right">Cancelled</th><th class="num px-3 py-2 text-right">No-show</th></tr></thead>
+    <tbody>
       {% for row in r.by_doctor %}
         <tr><td class="px-3 py-2">{{ row.doctor }}</td><td class="px-3 py-2">{{ row.department }}</td><td class="num px-3 py-2 text-right">{{ row.count }}</td><td class="num px-3 py-2 text-right">{{ row.completed }}</td><td class="num px-3 py-2 text-right">{{ row.cancelled }}</td><td class="num px-3 py-2 text-right">{{ row.no_show }}</td></tr>
       {% empty %}

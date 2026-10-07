@@ -2,13 +2,15 @@
 
 {% block title %}Lab Staff Dashboard{% endblock %}
 
-{% block content %}
-  <div class="flex flex-wrap items-center justify-between gap-3">
-    <h1 class="text-2xl font-semibold text-slate-900">Lab Staff Dashboard</h1>
-    <div class="flex flex-wrap gap-2">
-      <a href="{% url 'laboratory:worklist' %}" class="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Worklist</a>
-      <a href="{% url 'laboratory:walk_in' %}" class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Walk-in request</a>
-    </div>
+{% block page_title %}Lab Staff Dashboard{% endblock %}
+{% block page_actions %}
+  <div class="flex flex-wrap gap-2">
+    <a href="{% url 'laboratory:worklist' %}" class="btn btn-primary">Worklist</a>
+    <a href="{% url 'laboratory:walk_in' %}" class="btn btn-secondary">Walk-in request</a>
   </div>
+
+{% endblock %}
+
+{% block content %}
   {% include "reports/partials/cards.html" %}
 {% endblock %}

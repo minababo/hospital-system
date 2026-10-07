@@ -2,14 +2,15 @@
 
 {% block title %}Laboratory{% endblock %}
 
-{% block content %}
-  <div class="flex flex-wrap items-center justify-between gap-3">
-    <h1 class="text-2xl font-semibold text-slate-900">{% if is_receptionist %}Completed lab reports{% else %}Laboratory worklist{% endif %}</h1>
-    {% if can_walk_in %}
-      <a href="{% url 'laboratory:walk_in' %}" class="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Walk-in request</a>
-    {% endif %}
-  </div>
+{% block page_title %}{% if is_receptionist %}Completed lab reports{% else %}Laboratory worklist{% endif %}{% endblock %}
+{% block page_actions %}
+  {% if can_walk_in %}
+    <a href="{% url 'laboratory:walk_in' %}" class="btn btn-primary">Walk-in request</a>
+  {% endif %}
 
+{% endblock %}
+
+{% block content %}
   <form method="get" class="mt-6 grid gap-3 sm:grid-cols-6">
     <input type="search" name="q" value="{{ filter_form.q.value|default:'' }}" placeholder="Patient name, MRN or LAB-000123" class="sm:col-span-2">
     {% if not is_receptionist %}{{ filter_form.status }}{% endif %}
@@ -18,14 +19,14 @@
     {{ filter_form.patient }}
     {% if is_doctor %}<label class="flex items-center gap-2 text-sm">{{ filter_form.mine }} My orders</label>{% endif %}
     <div class="flex gap-2 sm:col-span-6">
-      <button type="submit" class="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Filter</button>
-      <a href="{% url 'laboratory:worklist' %}" class="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">Clear</a>
+      <button type="submit" class="btn btn-primary">Filter</button>
+      <a href="{% url 'laboratory:worklist' %}" class="btn btn-secondary">Clear</a>
     </div>
   </form>
 
-  <div class="mt-6 overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
-    <table class="min-w-full divide-y divide-slate-200 text-sm">
-      <thead class="bg-slate-50 text-left text-xs font-semibold tracking-wide text-slate-500 uppercase">
+  <div class="mt-6 table-wrap">
+    <table class="table">
+      <thead>
         <tr>
           <th class="px-4 py-3">Order</th>
           <th class="px-4 py-3">Patient</th>
@@ -35,7 +36,7 @@
           <th class="px-4 py-3">Status</th>
         </tr>
       </thead>
-      <tbody class="divide-y divide-slate-100">
+      <tbody>
         {% for order in orders %}
           <tr>
             <td class="px-4 py-3 font-mono">
@@ -55,7 +56,7 @@
             </td>
           </tr>
         {% empty %}
-          <tr><td colspan="6" class="px-4 py-6 text-center text-slate-500">No lab orders found.</td></tr>
+          <tr><td colspan="6">{% include "partials/empty_state.html" with message="No lab orders found." %}</td></tr>
         {% endfor %}
       </tbody>
     </table>

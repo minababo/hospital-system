@@ -2,15 +2,16 @@
 
 {% block title %}Transfer bed{% endblock %}
 
+{% block page_breadcrumb %}<a href="{% url 'admissions:admission_detail' admission.pk %}" class="text-sm text-slate-600 hover:text-slate-900">&larr; Back to {{ admission.number }}</a>{% endblock %}
+{% block page_title %}Transfer bed{% endblock %}
+
 {% block content %}
-  <a href="{% url 'admissions:admission_detail' admission.pk %}" class="text-sm text-slate-600 hover:text-slate-900">&larr; Back to {{ admission.number }}</a>
-  <h1 class="mt-2 text-2xl font-semibold text-slate-900">Transfer bed</h1>
   <p class="mt-1 text-sm text-slate-600">{{ admission.patient }} &middot; now in {{ admission.current_bed }}</p>
 
-  <form method="post" class="mt-6 max-w-xl space-y-4 rounded-lg border border-slate-200 bg-white p-6 shadow-sm" novalidate>
+  <form method="post" class="mt-6 max-w-xl space-y-4 card card-body" novalidate>
     {% csrf_token %}
     {% include "partials/form_errors.html" %}
     {% for field in form %}{% include "partials/form_field.html" %}{% endfor %}
-    <button type="submit" class="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Move patient</button>
+    <button type="submit" class="btn btn-primary">Move patient</button>
   </form>
 {% endblock %}

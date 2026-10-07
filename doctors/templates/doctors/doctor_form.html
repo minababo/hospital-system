@@ -2,16 +2,16 @@
 
 {% block title %}{{ title }}{% endblock %}
 
-{% block content %}
-  <a href="{% if doctor %}{% url 'doctors:doctor_detail' doctor.pk %}{% else %}{% url 'doctors:doctor_list' %}{% endif %}" class="text-sm text-slate-600 hover:text-slate-900">&larr; Back</a>
-  <h1 class="mt-2 text-2xl font-semibold text-slate-900">{{ title }}</h1>
+{% block page_breadcrumb %}<a href="{% if doctor %}{% url 'doctors:doctor_detail' doctor.pk %}{% else %}{% url 'doctors:doctor_list' %}{% endif %}" class="text-sm text-slate-600 hover:text-slate-900">&larr; Back</a>{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
 
+{% block content %}
   {# One <form>, one submit: both forms are validated and saved together. #}
   <form method="post" class="mt-6 max-w-3xl space-y-6" novalidate>
     {% csrf_token %}
 
     {% if user_form %}
-      <section class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+      <section class="card card-body">
         <h2 class="text-lg font-semibold text-slate-900">Account</h2>
         <div class="mt-4">{% include "partials/form_errors.html" with form=user_form %}</div>
         <div class="mt-4 grid gap-4 sm:grid-cols-2">
@@ -22,7 +22,7 @@
       </section>
     {% endif %}
 
-    <section class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+    <section class="card card-body">
       <h2 class="text-lg font-semibold text-slate-900">Doctor profile</h2>
       <div class="mt-4">{% include "partials/form_errors.html" with form=profile_form %}</div>
       <div class="mt-4 grid gap-4 sm:grid-cols-2">
@@ -32,6 +32,6 @@
       </div>
     </section>
 
-    <button type="submit" class="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Save</button>
+    <button type="submit" class="btn btn-primary">Save</button>
   </form>
 {% endblock %}

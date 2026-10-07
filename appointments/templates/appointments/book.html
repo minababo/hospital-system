@@ -2,23 +2,23 @@
 
 {% block title %}Book appointment{% endblock %}
 
-{% block content %}
-  <a href="{% url 'appointments:appointment_list' %}" class="text-sm text-slate-600 hover:text-slate-900">&larr; Back to appointments</a>
-  <h1 class="mt-2 text-2xl font-semibold text-slate-900">Book appointment</h1>
+{% block page_breadcrumb %}<a href="{% url 'appointments:appointment_list' %}" class="text-sm text-slate-600 hover:text-slate-900">&larr; Back to appointments</a>{% endblock %}
+{% block page_title %}Book appointment{% endblock %}
 
+{% block content %}
   {% if step == "patient" %}
-    <section class="mt-6 max-w-3xl rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+    <section class="mt-6 max-w-3xl card card-body">
       <h2 class="font-semibold text-slate-900">1. Find the patient</h2>
       <form method="get" class="mt-4 flex flex-wrap gap-2">
         <input type="search" name="q" value="{{ q }}" placeholder="Name, MRN, NIC or phone" class="sm:max-w-md" autofocus>
-        <button type="submit" class="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Search</button>
+        <button type="submit" class="btn btn-primary">Search</button>
       </form>
       {% if q %}
         <ul class="mt-4 divide-y divide-slate-100">
           {% for patient in patients %}
             <li class="flex items-center justify-between gap-3 py-2 text-sm">
               <span>{{ patient.full_name }} <span class="font-mono text-xs text-slate-500">{{ patient.mrn }}</span> &middot; {{ patient.phone }}</span>
-              <a href="?patient={{ patient.pk }}" class="rounded-md border border-slate-300 px-3 py-1 text-slate-700 hover:bg-slate-50">Select</a>
+              <a href="?patient={{ patient.pk }}" class="btn btn-secondary btn-sm">Select</a>
             </li>
           {% empty %}
             <li class="py-2 text-sm text-slate-500">No patients match "{{ q }}". <a href="{% url 'patients:patient_create' %}" class="underline">Register a new patient</a>.</li>
@@ -27,7 +27,7 @@
       {% endif %}
     </section>
   {% else %}
-    <section class="mt-6 max-w-3xl rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+    <section class="mt-6 max-w-3xl card card-body">
       <div class="flex flex-wrap items-center justify-between gap-2">
         <p class="text-sm"><span class="text-slate-500">Patient:</span> <span class="font-medium text-slate-900">{{ patient }}</span></p>
         <a href="{% url 'appointments:book' %}" class="text-sm text-slate-600 underline">Change patient</a>
@@ -40,13 +40,13 @@
         {% include "partials/form_field.html" with field=selection.doctor %}
         {% include "partials/form_field.html" with field=selection.date %}
         <div class="sm:col-span-3">
-          <button type="submit" class="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">Show available times</button>
+          <button type="submit" class="btn btn-secondary">Show available times</button>
         </div>
       </form>
     </section>
 
     {% if confirm_form %}
-      <section class="mt-4 max-w-3xl rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+      <section class="mt-4 max-w-3xl card card-body">
         <h2 class="font-semibold text-slate-900">3. Pick a time</h2>
         {% if slots %}
           <form method="post" class="mt-4 space-y-4" novalidate>
@@ -57,15 +57,15 @@
               <legend class="text-sm font-medium text-slate-700">Available times</legend>
               <div class="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-6">
                 {% for radio in confirm_form.start_time %}
-                  <label class="flex cursor-pointer items-center justify-center rounded-md border border-slate-300 px-2 py-2 text-sm has-[:checked]:border-slate-800 has-[:checked]:bg-slate-800 has-[:checked]:text-white">
+                  <label class="flex cursor-pointer items-center justify-center rounded-md border border-slate-300 px-2 py-2 text-sm has-[:checked]:border-primary-700 has-[:checked]:bg-primary-700 has-[:checked]:text-white">
                     {{ radio.tag }}<span class="ml-1">{{ radio.choice_label }}</span>
                   </label>
                 {% endfor %}
               </div>
-              {% for error in confirm_form.start_time.errors %}<p class="mt-1 text-sm text-red-600">{{ error }}</p>{% endfor %}
+              {% for error in confirm_form.start_time.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
             </fieldset>
             {% include "partials/form_field.html" with field=confirm_form.reason %}
-            <button type="submit" class="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Book appointment</button>
+            <button type="submit" class="btn btn-primary">Book appointment</button>
           </form>
         {% else %}
           {% include "partials/form_errors.html" with form=confirm_form %}

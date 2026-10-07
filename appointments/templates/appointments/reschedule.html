@@ -2,20 +2,21 @@
 
 {% block title %}Reschedule appointment{% endblock %}
 
+{% block page_breadcrumb %}<a href="{% url 'appointments:appointment_detail' appointment.pk %}" class="text-sm text-slate-600 hover:text-slate-900">&larr; Back to appointment</a>{% endblock %}
+{% block page_title %}Reschedule appointment{% endblock %}
+
 {% block content %}
-  <a href="{% url 'appointments:appointment_detail' appointment.pk %}" class="text-sm text-slate-600 hover:text-slate-900">&larr; Back to appointment</a>
-  <h1 class="mt-2 text-2xl font-semibold text-slate-900">Reschedule appointment</h1>
   <p class="mt-1 text-sm text-slate-600">
     {{ appointment.patient }} with {{ appointment.doctor }}, currently {{ appointment.date|date:"d M Y" }} at {{ appointment.start_time|time:"H:i" }}
   </p>
 
   <form method="get" class="mt-6 flex max-w-md flex-wrap items-end gap-2" data-autosubmit>
     <div class="grow">{% include "partials/form_field.html" with field=picker.date %}</div>
-    <button type="submit" class="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">Show times</button>
+    <button type="submit" class="btn btn-secondary">Show times</button>
   </form>
 
   {% if form %}
-    <section class="mt-4 max-w-3xl rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+    <section class="mt-4 max-w-3xl card card-body">
       {% include "partials/form_errors.html" %}
       {% if slots %}
         <form method="post" class="space-y-4" novalidate>
@@ -23,13 +24,13 @@
           {{ form.date }}
           <div class="grid grid-cols-3 gap-2 sm:grid-cols-6">
             {% for radio in form.start_time %}
-              <label class="flex cursor-pointer items-center justify-center rounded-md border border-slate-300 px-2 py-2 text-sm has-[:checked]:border-slate-800 has-[:checked]:bg-slate-800 has-[:checked]:text-white">
+              <label class="flex cursor-pointer items-center justify-center rounded-md border border-slate-300 px-2 py-2 text-sm has-[:checked]:border-primary-700 has-[:checked]:bg-primary-700 has-[:checked]:text-white">
                 {{ radio.tag }}<span class="ml-1">{{ radio.choice_label }}</span>
               </label>
             {% endfor %}
           </div>
-          {% for error in form.start_time.errors %}<p class="text-sm text-red-600">{{ error }}</p>{% endfor %}
-          <button type="submit" class="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Move appointment</button>
+          {% for error in form.start_time.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
+          <button type="submit" class="btn btn-primary">Move appointment</button>
         </form>
       {% else %}
         <p class="text-sm text-slate-600">No free times on {{ date|date:"d M Y" }}. Try another date.</p>
