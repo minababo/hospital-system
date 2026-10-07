@@ -1,5 +1,5 @@
 {% extends "layouts/app.html" %}
-{% load laboratory %}
+{% load laboratory pharmacy %}
 
 {% block title %}Treatment history{% endblock %}
 
@@ -64,6 +64,7 @@
           </ul>
         {% endif %}
         {% record_lab_section record request.user True %}
+        {% if record.prescription %}{% prescription_dispensing record.prescription anchor=False %}{% endif %}
       </article>
     {% empty %}
       <div class="card">{% include "partials/empty_state.html" with message="No finalized consultations yet." %}</div>

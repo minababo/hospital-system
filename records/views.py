@@ -10,6 +10,7 @@ from accounts.permissions import RoleRequiredMixin
 from appointments.models import Status as AppointmentStatus
 from appointments.selectors import visible_appointments
 from common.forms import add_service_errors
+from common.urls import redirect_to_section
 from patients.forms import DocumentUploadForm
 from patients.models import Patient
 from records import selectors, services
@@ -65,7 +66,10 @@ class RecordMixin(RoleRequiredMixin):
         context.update(forms)
         return render(self.request, "records/consultation.html", context)
 
-    def back(self, record):
+    def back(self, record, section=None):
+        """Back to the consultation; with a section, straight to that card (#notes, ...)."""
+        if section:
+            return redirect_to_section("records:record_detail", section, record.pk)
         return redirect("records:record_detail", pk=record.pk)
 
 
@@ -101,16 +105,27 @@ class RecordActionView(RecordMixin, View):
     def post(self, request, pk, **kwargs):
         return self.handle(self.get_record(), **kwargs)
 
+    # The card each consultation form lives in (its id on the page).
+    FORM_SECTIONS = {
+        "record_form": "notes",
+        "diagnosis_form": "diagnoses",
+        "item_form": "prescription",
+    }
+
     def form_failed(self, record, form, form_name, error=None, **extra):
         """Re-show the workspace with the bound form and its errors, keeping what the
         doctor typed. If the record is no longer editable, show a message instead."""
+        section = self.FORM_SECTIONS.get(form_name)
         if error is not None:
             add_service_errors(error, form)
         if record.status == RecordStatus.DRAFT and record.doctor.user_id == self.request.user.pk:
-            return self.render_consultation(record, **{form_name: form}, **extra)
+            # scroll_section marks the card with the errors so the page scrolls to it.
+            return self.render_consultation(
+                record, **{form_name: form}, scroll_section=section, **extra
+            )
         if error is not None:
             flash_errors(self.request, error)
-        return self.back(record)
+        return self.back(record, section)
 
 
 class RecordUpdateView(RecordActionView):
@@ -124,7 +139,7 @@ class RecordUpdateView(RecordActionView):
             record.refresh_from_db()
             return self.form_failed(record, form, "record_form", error)
         messages.success(self.request, "Draft saved.")
-        return self.back(record)
+        return self.back(record, "notes")
 
 
 class DiagnosisAddView(RecordActionView):
@@ -137,7 +152,7 @@ class DiagnosisAddView(RecordActionView):
         except ValidationError as error:
             return self.form_failed(record, form, "diagnosis_form", error)
         messages.success(self.request, "Diagnosis added.")
-        return self.back(record)
+        return self.back(record, "diagnoses")
 
 
 class DiagnosisRemoveView(RecordActionView):
@@ -149,7 +164,7 @@ class DiagnosisRemoveView(RecordActionView):
             flash_errors(self.request, error)
         else:
             messages.success(self.request, "Diagnosis removed.")
-        return self.back(record)
+        return self.back(record, "diagnoses")
 
 
 class ItemAddView(RecordActionView):
@@ -174,7 +189,7 @@ class ItemAddView(RecordActionView):
                 record, form, "item_form", error, show_allergy_override=is_allergy
             )
         messages.success(self.request, f"{data['medicine']} added to the prescription.")
-        return self.back(record)
+        return self.back(record, "prescription")
 
 
 class ItemRemoveView(RecordActionView):
@@ -189,7 +204,7 @@ class ItemRemoveView(RecordActionView):
             flash_errors(self.request, error)
         else:
             messages.success(self.request, "Medicine removed from the prescription.")
-        return self.back(record)
+        return self.back(record, "prescription")
 
 
 class ReportUploadView(RecordActionView):
@@ -199,7 +214,7 @@ class ReportUploadView(RecordActionView):
             for field_errors in form.errors.values():
                 for error in field_errors:
                     messages.error(self.request, f"Upload failed: {error}")
-            return self.back(record)
+            return self.back(record, "reports")
         try:
             report = services.attach_report(
                 record,
@@ -213,7 +228,7 @@ class ReportUploadView(RecordActionView):
                 messages.error(self.request, f"Upload failed: {message}")
         else:
             messages.success(self.request, f"{report.document.original_name} was uploaded.")
-        return self.back(record)
+        return self.back(record, "reports")
 
 
 class FinalizeView(RecordActionView):
@@ -240,7 +255,7 @@ class AddendumAddView(RecordActionView):
             flash_errors(self.request, error)
         else:
             messages.success(self.request, "Addendum added.")
-        return self.back(record)
+        return self.back(record, "addenda")
 
 
 class PrescriptionCancelView(RecordActionView):
@@ -258,7 +273,7 @@ class PrescriptionCancelView(RecordActionView):
             flash_errors(self.request, error)
         else:
             messages.success(self.request, "Prescription cancelled.")
-        return self.back(record)
+        return self.back(record, "prescription")
 
 
 # --- Vitals, history, print -------------------------------------------------

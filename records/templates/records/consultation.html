@@ -1,5 +1,5 @@
 {% extends "layouts/app.html" %}
-{% load laboratory %}
+{% load laboratory pharmacy %}
 
 {% block title %}Consultation{% endblock %}
 
@@ -28,7 +28,7 @@
   </section>
 
   {# --- Clinical notes ------------------------------------------------------ #}
-  <section class="mt-4 card card-body">
+  <section id="notes" class="section-anchor mt-4 card card-body"{% if scroll_section == "notes" %} data-scroll-target{% endif %}>
     <h2 class="text-lg font-semibold text-slate-900">Notes</h2>
     {% if editable %}
       <form method="post" action="{% url 'records:record_update' record.pk %}" class="mt-4 space-y-4" novalidate>
@@ -51,7 +51,7 @@
   </section>
 
   {# --- Diagnoses ------------------------------------------------------------ #}
-  <section class="mt-4 card card-body">
+  <section id="diagnoses" class="section-anchor mt-4 card card-body"{% if scroll_section == "diagnoses" %} data-scroll-target{% endif %}>
     <h2 class="text-lg font-semibold text-slate-900">Diagnoses</h2>
     <ul class="mt-3 divide-y divide-slate-100 text-sm">
       {% for diagnosis in diagnoses %}
@@ -88,7 +88,7 @@
   </section>
 
   {# --- Prescription --------------------------------------------------------- #}
-  <section class="mt-4 card card-body">
+  <section id="prescription" class="section-anchor mt-4 card card-body"{% if scroll_section == "prescription" %} data-scroll-target{% endif %}>
     <div class="flex flex-wrap items-center justify-between gap-2">
       <h2 class="text-lg font-semibold text-slate-900">Prescription</h2>
       {% if prescription %}{% include "records/partials/prescription_status.html" %}{% endif %}
@@ -152,8 +152,11 @@
     {% endif %}
   </section>
 
+  {# Dispensing card (what the pharmacy has handed over) from the pharmacy app's tag. #}
+  {% if prescription %}{% prescription_dispensing prescription %}{% endif %}
+
   {# --- Reports ----------------------------------------------------------- #}
-  <section class="mt-4 card card-body">
+  <section id="reports" class="section-anchor mt-4 card card-body">
     <h2 class="text-lg font-semibold text-slate-900">Reports</h2>
     <ul class="mt-3 divide-y divide-slate-100 text-sm">
       {% for report in reports %}
@@ -189,7 +192,7 @@
     </form>
   {% else %}
     {# --- Addenda: corrections after finalizing ------------------------------ #}
-    <section class="mt-4 card card-body">
+    <section id="addenda" class="section-anchor mt-4 card card-body">
       <h2 class="text-lg font-semibold text-slate-900">Addenda</h2>
       {% if record.finalized_at %}<p class="text-xs text-slate-500">Finalized {{ record.finalized_at|date:"d M Y H:i" }}</p>{% endif %}
       <ul class="mt-3 space-y-2 text-sm">

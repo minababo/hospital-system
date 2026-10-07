@@ -14,6 +14,7 @@ from appointments.permissions import BOOK_ROLES
 from appointments.selectors import patient_appointments
 from audit.services import Action, log_action
 from common.forms import add_service_errors
+from common.urls import redirect_to_section
 from patients import selectors, services
 from patients.forms import DocumentUploadForm, PatientForm
 from patients.models import Patient
@@ -133,7 +134,7 @@ class DocumentUploadView(RoleRequiredMixin, View):
             for field_errors in form.errors.values():
                 for error in field_errors:
                     messages.error(request, f"Upload failed: {error}")
-            return redirect("patients:patient_detail", pk=patient.pk)
+            return redirect_to_section("patients:patient_detail", "documents", patient.pk)
 
         try:
             document = services.upload_document(
@@ -148,7 +149,7 @@ class DocumentUploadView(RoleRequiredMixin, View):
                 messages.error(request, f"Upload failed: {message}")
         else:
             messages.success(request, f"{document.original_name} was uploaded.")
-        return redirect("patients:patient_detail", pk=patient.pk)
+        return redirect_to_section("patients:patient_detail", "documents", patient.pk)
 
 
 class DocumentView(RoleRequiredMixin, View):
@@ -189,4 +190,4 @@ class DocumentDeleteView(RoleRequiredMixin, View):
         name = document.original_name
         services.delete_document(document, acting_user=request.user)
         messages.success(request, f"{name} was deleted.")
-        return redirect("patients:patient_detail", pk=pk)
+        return redirect_to_section("patients:patient_detail", "documents", pk)
