@@ -1,7 +1,7 @@
 {# One result value with its flag. Expects `result` (may be None). #}
 {% if result %}
-  <span class="{% if result.is_abnormal %}font-bold text-red-700{% endif %}">{{ result.display_value }}</span>
-  {% if result.flag == "H" or result.flag == "L" %}<span class="ml-1 rounded bg-red-50 px-1 text-xs font-bold text-red-700">{{ result.flag }}</span>{% endif %}
+  <span class="{% if result.is_abnormal %}font-bold text-rose-700{% endif %}">{{ result.display_value }}</span>
+  {% if result.flag == "H" or result.flag == "L" %}<span class="badge badge-danger ml-1">{{ result.flag }}</span>{% endif %}
 {% else %}
   <span class="text-slate-400">—</span>
 {% endif %}

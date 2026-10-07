@@ -3,13 +3,13 @@
   {% if "check_in" in actions %}
     <form method="post" action="{% url 'appointments:check_in' appointment.pk %}">
       {% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
-      <button type="submit" class="rounded-md bg-amber-600 px-3 py-1 text-xs font-medium text-white hover:bg-amber-500">Check in</button>
+      <button type="submit" class="btn btn-primary btn-sm">Check in</button>
     </form>
   {% endif %}
   {% if "no_show" in actions %}
     <form method="post" action="{% url 'appointments:no_show' appointment.pk %}" onsubmit="return confirm('Mark this appointment as a no-show?');">
       {% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
-      <button type="submit" class="rounded-md border border-slate-300 px-3 py-1 text-xs text-slate-700 hover:bg-slate-50">No-show</button>
+      <button type="submit" class="btn btn-secondary btn-sm">No-show</button>
     </form>
   {% endif %}
 </div>

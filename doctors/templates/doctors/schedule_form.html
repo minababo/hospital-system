@@ -2,17 +2,18 @@
 
 {% block title %}{% if schedule %}Edit schedule block{% else %}Add schedule block{% endif %}{% endblock %}
 
+{% block page_breadcrumb %}<a href="{% url 'doctors:doctor_detail' doctor.pk %}" class="text-sm text-slate-600 hover:text-slate-900">&larr; Back to {{ doctor }}</a>{% endblock %}
+{% block page_title %}{% if schedule %}Edit schedule block{% else %}Add schedule block{% endif %}{% endblock %}
+
 {% block content %}
-  <a href="{% url 'doctors:doctor_detail' doctor.pk %}" class="text-sm text-slate-600 hover:text-slate-900">&larr; Back to {{ doctor }}</a>
-  <h1 class="mt-2 text-2xl font-semibold text-slate-900">{% if schedule %}Edit schedule block{% else %}Add schedule block{% endif %}</h1>
   <p class="mt-1 text-sm text-slate-600">If the block doesn't divide evenly into slots, the last partial slot is not offered.</p>
 
-  <form method="post" class="mt-6 max-w-xl space-y-4 rounded-lg border border-slate-200 bg-white p-6 shadow-sm" novalidate>
+  <form method="post" class="mt-6 max-w-xl space-y-4 card card-body" novalidate>
     {% csrf_token %}
     {% include "partials/form_errors.html" %}
     {% for field in form %}
       {% include "partials/form_field.html" %}
     {% endfor %}
-    <button type="submit" class="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Save</button>
+    <button type="submit" class="btn btn-primary">Save</button>
   </form>
 {% endblock %}

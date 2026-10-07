@@ -1,7 +1,3 @@
 {# Lab order status colours. Expects `order`. #}
-<span class="inline-block rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap
-  {% if order.status == 'REQUESTED' %}bg-blue-50 text-blue-700
-  {% elif order.status == 'SAMPLE_COLLECTED' %}bg-amber-50 text-amber-800
-  {% elif order.status == 'COMPLETED' %}bg-green-50 text-green-700
-  {% else %}bg-slate-100 text-slate-500 line-through{% endif %}">{{ order.get_status_display }}</span>
-{% if order.priority == "URGENT" %}<span class="ml-1 inline-block rounded-full bg-red-600 px-2 py-0.5 text-xs font-semibold text-white">Urgent</span>{% endif %}
+<span class="badge {% if order.status == 'REQUESTED' %}badge-info{% elif order.status == 'SAMPLE_COLLECTED' %}badge-warning{% elif order.status == 'COMPLETED' %}badge-success{% else %}badge-neutral line-through{% endif %}">{{ order.get_status_display }}</span>
+{% if order.priority == "URGENT" %}<span class="badge badge-danger ml-1">Urgent</span>{% endif %}

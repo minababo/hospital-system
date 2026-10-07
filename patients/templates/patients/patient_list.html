@@ -2,25 +2,26 @@
 
 {% block title %}Patients{% endblock %}
 
-{% block content %}
-  <div class="flex flex-wrap items-center justify-between gap-3">
-    <h1 class="text-2xl font-semibold text-slate-900">Patients</h1>
-    {% if can_edit %}
-      <a href="{% url 'patients:patient_create' %}" class="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Register patient</a>
-    {% endif %}
-  </div>
+{% block page_title %}Patients{% endblock %}
+{% block page_actions %}
+  {% if can_edit %}
+    <a href="{% url 'patients:patient_create' %}" class="btn btn-primary">Register patient</a>
+  {% endif %}
 
+{% endblock %}
+
+{% block content %}
   <form method="get" class="mt-6 flex flex-wrap gap-2">
     <input type="search" name="q" value="{{ q }}" placeholder="Search by name, MRN, NIC or phone" class="sm:max-w-md">
-    <button type="submit" class="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Search</button>
+    <button type="submit" class="btn btn-primary">Search</button>
     {% if q %}
-      <a href="{% url 'patients:patient_list' %}" class="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">Clear</a>
+      <a href="{% url 'patients:patient_list' %}" class="btn btn-secondary">Clear</a>
     {% endif %}
   </form>
 
-  <div class="mt-6 overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
-    <table class="min-w-full divide-y divide-slate-200 text-sm">
-      <thead class="bg-slate-50 text-left text-xs font-semibold tracking-wide text-slate-500 uppercase">
+  <div class="mt-6 table-wrap">
+    <table class="table">
+      <thead>
         <tr>
           <th class="px-4 py-3">MRN</th>
           <th class="px-4 py-3">Name</th>
@@ -30,7 +31,7 @@
           <th class="px-4 py-3">Phone</th>
         </tr>
       </thead>
-      <tbody class="divide-y divide-slate-100">
+      <tbody>
         {% for patient in patients %}
           <tr>
             <td class="px-4 py-3 font-mono text-slate-700">{{ patient.mrn }}</td>
@@ -43,7 +44,7 @@
             <td class="px-4 py-3 whitespace-nowrap">{{ patient.phone }}</td>
           </tr>
         {% empty %}
-          <tr><td colspan="6" class="px-4 py-6 text-center text-slate-500">{% if q %}No patients match "{{ q }}".{% else %}No patients registered yet.{% endif %}</td></tr>
+          <tr><td colspan="6">{% if q %}<p class="px-4 py-6 text-center text-slate-500">No patients match "{{ q }}".</p>{% else %}{% include "partials/empty_state.html" with message="No patients registered yet." %}{% endif %}</td></tr>
         {% endfor %}
       </tbody>
     </table>

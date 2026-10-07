@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.urls import reverse
 
-from accounts.navigation import CHANGE_PASSWORD, MY_LEAVE, NAV_ITEMS
+from accounts.navigation import CHANGE_PASSWORD, MY_LEAVE, NAV_GROUPS, NAV_ITEMS, NAV_META
 
 
 def session_timeout(request):
@@ -11,7 +11,7 @@ def session_timeout(request):
 def navigation(request):
     user = request.user
     if not user.is_authenticated:
-        return {"nav_items": []}
+        return {"nav_items": [], "nav_groups": []}
 
     match = request.resolver_match
     current = match.view_name if match else None
@@ -20,10 +20,21 @@ def navigation(request):
         position = links.index(CHANGE_PASSWORD) if CHANGE_PASSWORD in links else len(links)
         links.insert(position, MY_LEAVE)
     items = [
-        {"label": label, "url": reverse(url_name), "active": url_name == current}
+        {
+            "label": label,
+            "url": reverse(url_name),
+            "active": url_name == current,
+            "group": NAV_META[url_name][0],
+            "icon": NAV_META[url_name][1],
+        }
         for label, url_name in links
     ]
-    return {"nav_items": items}
+    # The sidebar shows the same items under group headings (empty groups left out).
+    groups = [
+        {"name": name, "items": [item for item in items if item["group"] == name]}
+        for name in NAV_GROUPS
+    ]
+    return {"nav_items": items, "nav_groups": [group for group in groups if group["items"]]}
 
 
 def has_active_employee_record(request):

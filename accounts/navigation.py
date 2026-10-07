@@ -95,3 +95,43 @@ NAV_ITEMS = {
         CHANGE_PASSWORD,
     ],
 }
+
+# Sidebar grouping. Groups show in this order, each only when the role has an item in it;
+# items keep their order from NAV_ITEMS within a group.
+NAV_GROUPS = [
+    "Overview",
+    "Clinical",
+    "Front desk",
+    "Finance",
+    "Pharmacy & Lab",
+    "Administration",
+    "Account",
+]
+
+# url name -> (group, icon). Icons are names in templates/partials/icon.html.
+# Every url name used above needs an entry (a test checks this).
+NAV_META = {
+    "dashboard": ("Overview", "home"),
+    "reports:index": ("Overview", "chart-bar"),
+    "admissions:admission_list": ("Clinical", "building-office-2"),
+    "doctors:me": ("Clinical", "identification"),
+    "doctors:doctor_list": ("Clinical", "user-circle"),
+    "patients:patient_list": ("Front desk", "users"),
+    "appointments:appointment_list": ("Front desk", "calendar"),
+    "billing:invoice_list": ("Finance", "banknotes"),
+    "laboratory:worklist": ("Pharmacy & Lab", "beaker"),
+    "laboratory:test_list": ("Pharmacy & Lab", "list-bullet"),
+    "pharmacy:dispensing_queue": ("Pharmacy & Lab", "clipboard-document-list"),
+    "pharmacy:inventory_list": ("Pharmacy & Lab", "archive-box"),
+    "pharmacy:alerts": ("Pharmacy & Lab", "exclamation-triangle"),
+    "pharmacy:medicine_list": ("Pharmacy & Lab", "eye-dropper"),
+    "accounts:user_list": ("Administration", "shield-check"),
+    "staff:employee_list": ("Administration", "briefcase"),
+    "staff:attendance": ("Administration", "clipboard-document-check"),
+    "staff:leave_list": ("Administration", "calendar-days"),
+    "audit:log_list": ("Administration", "document-magnifying-glass"),
+    "doctors:department_list": ("Administration", "building-office"),
+    "admissions:ward_list": ("Administration", "squares-2x2"),
+    "staff:my_leave": ("Account", "calendar-days"),
+    "accounts:password_change": ("Account", "key"),
+}

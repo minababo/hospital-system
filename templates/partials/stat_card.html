@@ -1,0 +1,11 @@
+{% comment %}
+  A dashboard number. Variables: label, value, hint (optional), href (optional: the card
+  becomes a link), tone (optional: neutral/success/warning/danger/info, a coloured edge).
+{% endcomment %}
+<{% if href %}a href="{{ href }}"{% else %}div{% endif %} class="card card-body block border-l-4
+  {% if tone == 'success' %}border-l-emerald-500{% elif tone == 'warning' %}border-l-amber-500{% elif tone == 'danger' %}border-l-rose-500{% elif tone == 'info' %}border-l-sky-500{% else %}border-l-primary-600{% endif %}
+  {% if href %}transition-shadow hover:shadow-md{% endif %}">
+  <p class="text-sm font-medium text-slate-500">{{ label }}</p>
+  <p class="mt-2 text-2xl font-semibold text-slate-900 tabular-nums">{{ value }}</p>
+  {% if hint %}<p class="mt-1 text-xs text-slate-500">{{ hint }}</p>{% endif %}
+</{% if href %}a{% else %}div{% endif %}>

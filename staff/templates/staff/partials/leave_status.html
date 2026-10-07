@@ -1,6 +1,2 @@
 {# Leave status badge. Expects `leave`. #}
-<span class="inline-block rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap
-  {% if leave.status == 'PENDING' %}bg-amber-50 text-amber-800
-  {% elif leave.status == 'APPROVED' %}bg-green-50 text-green-700
-  {% elif leave.status == 'REJECTED' %}bg-red-50 text-red-700
-  {% else %}bg-slate-100 text-slate-500 line-through{% endif %}">{{ leave.get_status_display }}</span>
+<span class="badge {% if leave.status == 'PENDING' %}badge-warning{% elif leave.status == 'APPROVED' %}badge-success{% elif leave.status == 'REJECTED' %}badge-danger{% else %}badge-neutral line-through{% endif %}">{{ leave.get_status_display }}</span>

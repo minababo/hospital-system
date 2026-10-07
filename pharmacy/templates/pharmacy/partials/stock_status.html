@@ -1,4 +1,4 @@
 {# Stock status badge. Expects `status` (OK / LOW / OUT_OF_STOCK). #}
-{% if status == "OUT_OF_STOCK" %}<span class="rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700">Out of stock</span>
-{% elif status == "LOW" %}<span class="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800">Low</span>
-{% else %}<span class="rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">In stock</span>{% endif %}
+{% if status == "OUT_OF_STOCK" %}<span class="badge badge-danger">Out of stock</span>
+{% elif status == "LOW" %}<span class="badge badge-warning">Low</span>
+{% else %}<span class="badge badge-success">In stock</span>{% endif %}

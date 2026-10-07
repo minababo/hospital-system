@@ -6,7 +6,7 @@
   <h1 class="text-xl font-semibold text-slate-900">Log in</h1>
 
   {% if request.GET.expired %}
-    <p class="mt-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+    <p class="alert alert-warning mt-4" role="status">
       Your session expired due to inactivity. Please log in again.
     </p>
   {% endif %}
@@ -17,6 +17,6 @@
     {% include "partials/form_field.html" with field=form.username %}
     {% include "partials/form_field.html" with field=form.password %}
     <input type="hidden" name="next" value="{{ next }}">
-    <button type="submit" class="w-full rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Log in</button>
+    <button type="submit" class="w-full btn btn-primary">Log in</button>
   </form>
 {% endblock %}

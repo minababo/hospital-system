@@ -1,7 +1,2 @@
 {# Prescription status badge. Expects `prescription`. #}
-<span class="inline-block rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap
-  {% if prescription.status == 'DRAFT' %}bg-slate-100 text-slate-700
-  {% elif prescription.status == 'ISSUED' %}bg-blue-50 text-blue-700
-  {% elif prescription.status == 'PARTIALLY_DISPENSED' %}bg-amber-50 text-amber-800
-  {% elif prescription.status == 'DISPENSED' %}bg-green-50 text-green-700
-  {% else %}bg-red-50 text-red-700 line-through{% endif %}">{{ prescription.get_status_display }}</span>
+<span class="badge {% if prescription.status == 'DRAFT' %}badge-neutral{% elif prescription.status == 'ISSUED' %}badge-info{% elif prescription.status == 'PARTIALLY_DISPENSED' %}badge-warning{% elif prescription.status == 'DISPENSED' %}badge-success{% else %}badge-danger line-through{% endif %}">{{ prescription.get_status_display }}</span>

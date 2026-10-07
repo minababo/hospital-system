@@ -3,16 +3,15 @@
 
 {% block title %}Appointment{% endblock %}
 
-{% block content %}
-  <a href="{% url 'appointments:appointment_list' %}?date={{ appointment.date|date:'Y-m-d' }}" class="text-sm text-slate-600 hover:text-slate-900">&larr; Back to appointments</a>
-  <div class="mt-2 flex flex-wrap items-center justify-between gap-3">
-    <h1 class="text-2xl font-semibold text-slate-900">
-      {{ appointment.date|date:"D, d M Y" }}, {{ appointment.start_time|time:"H:i" }}&ndash;{{ appointment.end_time|time:"H:i" }}
-    </h1>
-    {% include "appointments/partials/status_badge.html" with status=appointment.status label=appointment.get_status_display %}
-  </div>
+{% block page_breadcrumb %}<a href="{% url 'appointments:appointment_list' %}?date={{ appointment.date|date:'Y-m-d' }}" class="text-sm text-slate-600 hover:text-slate-900">&larr; Back to appointments</a>{% endblock %}
+{% block page_title %}{{ appointment.date|date:"D, d M Y" }}, {{ appointment.start_time|time:"H:i" }}&ndash;{{ appointment.end_time|time:"H:i" }}{% endblock %}
+{% block page_actions %}
+  {% include "appointments/partials/status_badge.html" with status=appointment.status label=appointment.get_status_display %}
 
-  <dl class="mt-6 grid gap-4 rounded-lg border border-slate-200 bg-white p-6 text-sm shadow-sm sm:grid-cols-2 lg:grid-cols-3">
+{% endblock %}
+
+{% block content %}
+  <dl class="mt-6 grid gap-4 card card-body text-sm sm:grid-cols-2 lg:grid-cols-3">
     <div>
       <dt class="text-slate-500">Patient</dt>
       <dd class="mt-1 font-medium text-slate-900"><a href="{% url 'patients:patient_detail' appointment.patient.pk %}" class="hover:underline">{{ appointment.patient }}</a></dd>
@@ -23,24 +22,24 @@
     <div><dt class="text-slate-500">Times rescheduled</dt><dd class="mt-1 font-medium text-slate-900">{{ appointment.reschedule_count }}</dd></div>
   </dl>
 
-  <section class="mt-8 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+  <section class="mt-8 card card-body">
     <div class="flex flex-wrap items-center justify-between gap-3">
       <h2 class="text-lg font-semibold text-slate-900">Consultation</h2>
       <div class="flex flex-wrap gap-2">
         {# From the admissions app's template tag: appointments never imports admissions. #}
         {% appointment_admit_action appointment request.user %}
         {% if can_record_vitals %}
-          <a href="{% url 'records:vitals' appointment.pk %}" class="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50">Record vitals</a>
+          <a href="{% url 'records:vitals' appointment.pk %}" class="btn btn-secondary btn-sm">Record vitals</a>
         {% endif %}
         {% if can_start_consultation %}
           <form method="post" action="{% url 'records:start' appointment.pk %}">
             {% csrf_token %}
-            <button type="submit" class="rounded-md bg-slate-800 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-700">Start consultation</button>
+            <button type="submit" class="btn btn-primary btn-sm">Start consultation</button>
           </form>
         {% elif can_open_draft %}
-          <a href="{% url 'records:record_detail' record.pk %}" class="rounded-md bg-slate-800 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-700">Open consultation</a>
+          <a href="{% url 'records:record_detail' record.pk %}" class="btn btn-primary btn-sm">Open consultation</a>
         {% elif can_view_record %}
-          <a href="{% url 'records:record_detail' record.pk %}" class="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50">View record</a>
+          <a href="{% url 'records:record_detail' record.pk %}" class="btn btn-secondary btn-sm">View record</a>
         {% endif %}
       </div>
     </div>
@@ -62,14 +61,14 @@
     <div class="mt-3 flex flex-wrap items-start gap-3">
       {% include "appointments/partials/action_buttons.html" %}
       {% if "reschedule" in actions %}
-        <a href="{% url 'appointments:reschedule' appointment.pk %}" class="rounded-md border border-slate-300 bg-white px-3 py-1 text-xs text-slate-700 hover:bg-slate-50">Reschedule</a>
+        <a href="{% url 'appointments:reschedule' appointment.pk %}" class="btn btn-secondary btn-sm">Reschedule</a>
       {% endif %}
     </div>
     {% if "cancel" in actions %}
-      <form method="post" action="{% url 'appointments:cancel' appointment.pk %}" class="mt-4 max-w-md space-y-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+      <form method="post" action="{% url 'appointments:cancel' appointment.pk %}" class="mt-4 max-w-md space-y-3 card p-4">
         {% csrf_token %}
         {% include "partials/form_field.html" with field=cancel_form.reason %}
-        <button type="submit" class="rounded-md bg-red-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-600">Cancel appointment</button>
+        <button type="submit" class="btn btn-danger btn-sm">Cancel appointment</button>
       </form>
     {% endif %}
   {% endif %}

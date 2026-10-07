@@ -3,15 +3,12 @@
 
 {% block title %}{{ title }}{% endblock %}
 
-{% block content %}
-  {% if charge.invoice_id %}
-    <a href="{% url 'billing:invoice_detail' charge.invoice_id %}" class="text-sm text-slate-600 hover:text-slate-900">&larr; Invoice {{ charge.invoice.number }}</a>
-  {% else %}
-    <a href="{% url 'billing:patient_billing' charge.patient_id %}" class="text-sm text-slate-600 hover:text-slate-900">&larr; {{ charge.patient.full_name }}'s billing</a>
-  {% endif %}
-  <h1 class="mt-2 text-2xl font-semibold text-slate-900">{{ title }}</h1>
+{% block page_breadcrumb %}{% if charge.invoice_id %}<a href="{% url 'billing:invoice_detail' charge.invoice_id %}" class="text-sm text-slate-600 hover:text-slate-900">&larr; Invoice {{ charge.invoice.number }}</a>{% else %}<a href="{% url 'billing:patient_billing' charge.patient_id %}" class="text-sm text-slate-600 hover:text-slate-900">&larr; {{ charge.patient.full_name }}'s billing</a>{% endif %}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
 
-  <dl class="mt-6 grid gap-4 rounded-lg border border-slate-200 bg-white p-6 text-sm shadow-sm sm:grid-cols-3">
+{% block content %}
+
+  <dl class="mt-6 grid gap-4 card card-body text-sm sm:grid-cols-3">
     <div><dt class="text-slate-500">Patient</dt><dd class="text-slate-900">{{ charge.patient }}</dd></div>
     <div><dt class="text-slate-500">Charge</dt><dd class="text-slate-900">{{ charge.description }} ({{ charge.get_charge_type_display }})</dd></div>
     <div><dt class="text-slate-500">Amount</dt><dd class="text-slate-900">{{ charge.quantity }} × {{ charge.unit_price|rupees }} = {{ charge.amount|rupees }}</dd></div>
@@ -20,18 +17,18 @@
     <div><dt class="text-slate-500">Kind</dt><dd class="text-slate-900">{% if charge.is_manual %}Manual charge{% else %}System charge{% endif %}</dd></div>
   </dl>
 
-  <form method="post" class="mt-6 max-w-2xl rounded-lg border border-slate-200 bg-white p-6 shadow-sm" novalidate>
+  <form method="post" class="mt-6 max-w-2xl card card-body" novalidate>
     {% csrf_token %}
     {% include "partials/form_errors.html" %}
     <div class="grid gap-3 sm:grid-cols-2">
       {% for field in form %}{% include "partials/form_field.html" %}{% endfor %}
     </div>
     <div class="mt-4 flex gap-2">
-      <button type="submit" class="rounded-md {% if danger %}bg-red-700 hover:bg-red-600{% else %}bg-slate-800 hover:bg-slate-700{% endif %} px-4 py-2 text-sm font-medium text-white">{{ button }}</button>
+      <button type="submit" class="btn {% if danger %}btn-danger{% else %}btn-primary{% endif %}">{{ button }}</button>
       {% if charge.invoice_id %}
-        <a href="{% url 'billing:invoice_detail' charge.invoice_id %}" class="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">Cancel</a>
+        <a href="{% url 'billing:invoice_detail' charge.invoice_id %}" class="btn btn-secondary">Cancel</a>
       {% else %}
-        <a href="{% url 'billing:patient_billing' charge.patient_id %}" class="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">Cancel</a>
+        <a href="{% url 'billing:patient_billing' charge.patient_id %}" class="btn btn-secondary">Cancel</a>
       {% endif %}
     </div>
   </form>

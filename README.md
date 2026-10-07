@@ -378,6 +378,29 @@ the log filtered to that patient.
   `X-Forwarded-For` address instead. Leave it `False` anywhere without a trusted proxy, because
   any client can send that header.
 
+## User interface
+
+Pages are server-rendered Django templates styled with **Tailwind CSS from a CDN**
+(`@tailwindcss/browser`, pinned to an exact version in `templates/base.html` so a new release
+can't change the look between deploys).
+
+- **No build step, on purpose:** the browser build compiles the classes on the page, so there is
+  no Node.js toolchain to install, run in CI or deploy on Render. The trade-off is a little work
+  in the browser on page load, which is fine for an internal staff app.
+- **Design system in one place:** `templates/base.html` defines the colours (`@theme`) and the
+  component classes used everywhere: `btn` (`btn-primary`, `btn-secondary`, `btn-danger`,
+  `btn-ghost`, `btn-sm`), `card`, `table-wrap` + `table`, `form-input` / `form-select` /
+  `form-file`, `badge` (`badge-success`, `badge-warning`, ...), `alert`, `page-title`.
+- **Layout:** `templates/layouts/app.html` has the top bar, the sidebar (grouped per role from
+  `accounts/navigation.py`; a slide-in drawer on phones) and the page header, filled by each page's
+  `page_title`, `page_subtitle` and `page_actions` blocks.
+- **Shared partials** in `templates/partials/`: `form_field.html` (label, the right input class,
+  help and errors), `stat_card.html`, `empty_state.html`, `pagination.html`, `messages.html`,
+  `icon.html` (Heroicons, MIT).
+- **Print pages are separate:** invoices, receipts, lab reports, prescriptions, discharge
+  summaries and printable reports extend `templates/print/base.html`, which has its own small
+  stylesheet and does not load Tailwind, so they print the same in any browser.
+
 ## File storage
 
 Patient documents (PDF, JPG, PNG up to `MAX_UPLOAD_MB`) are stored in a **private** Supabase

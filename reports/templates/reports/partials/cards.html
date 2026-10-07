@@ -1,3 +1,11 @@
-<div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-  {% for card in cards %}{% include "reports/partials/stat_card.html" %}{% endfor %}
+{% load money %}
+{# Dashboard numbers. Each card comes from reports.selectors.card() (label, value, sub, href, money). #}
+<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+  {% for card in cards %}
+    {% if card.money %}
+      {% include "partials/stat_card.html" with label=card.label value=card.value|rupees hint=card.sub href=card.href tone=card.tone %}
+    {% else %}
+      {% include "partials/stat_card.html" with label=card.label value=card.value hint=card.sub href=card.href tone=card.tone %}
+    {% endif %}
+  {% endfor %}
 </div>

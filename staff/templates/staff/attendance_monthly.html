@@ -2,22 +2,23 @@
 
 {% block title %}Attendance {{ month|date:"F Y" }}{% endblock %}
 
+{% block page_title %}Monthly attendance{% endblock %}
+
 {% block content %}
-  <h1 class="text-2xl font-semibold text-slate-900">Monthly attendance</h1>
   {% include "staff/partials/staff_nav.html" %}
 
   <div class="mt-6 flex flex-wrap items-center gap-2 text-sm">
-    <a href="?month={{ prev_month|date:'Y-m' }}" class="rounded-md border border-slate-300 bg-white px-3 py-1.5 hover:bg-slate-50">&larr; Previous month</a>
-    <a href="?month={{ next_month|date:'Y-m' }}" class="rounded-md border border-slate-300 bg-white px-3 py-1.5 hover:bg-slate-50">Next month &rarr;</a>
+    <a href="?month={{ prev_month|date:'Y-m' }}" class="btn btn-secondary btn-sm">&larr; Previous month</a>
+    <a href="?month={{ next_month|date:'Y-m' }}" class="btn btn-secondary btn-sm">Next month &rarr;</a>
     <span class="ml-2 font-medium text-slate-900">{{ month|date:"F Y" }}</span>
   </div>
 
-  <div class="mt-4 overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
-    <table class="min-w-full divide-y divide-slate-200 text-sm">
-      <thead class="bg-slate-50 text-left text-xs font-semibold tracking-wide text-slate-500 uppercase">
+  <div class="mt-4 table-wrap">
+    <table class="table">
+      <thead>
         <tr><th class="px-4 py-3">Employee</th><th class="px-4 py-3">Department</th><th class="px-4 py-3 text-right">Present</th><th class="px-4 py-3 text-right">Half day</th><th class="px-4 py-3 text-right">Absent</th><th class="px-4 py-3 text-right">Leave days</th></tr>
       </thead>
-      <tbody class="divide-y divide-slate-100">
+      <tbody>
         {% for row in rows %}
           <tr>
             <td class="px-4 py-3"><a href="{% url 'staff:employee_detail' row.employee.pk %}" class="hover:underline">{{ row.employee.full_name }}</a></td>
@@ -28,7 +29,7 @@
             <td class="px-4 py-3 text-right">{{ row.leave_days }}</td>
           </tr>
         {% empty %}
-          <tr><td colspan="6" class="px-4 py-6 text-center text-slate-500">No employees worked this month.</td></tr>
+          <tr><td colspan="6">{% include "partials/empty_state.html" with message="No employees worked this month." %}</td></tr>
         {% endfor %}
       </tbody>
     </table>

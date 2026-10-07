@@ -33,10 +33,10 @@
 <table class="mt-2 text-sm">
   <tr>{% for bucket in r.aging %}<td class="pr-6"><span class="text-slate-500">{{ bucket.label }}:</span> <strong>{{ bucket.total|rupees }}</strong></td>{% endfor %}</tr>
 </table>
-<div class="mt-2 overflow-x-auto rounded-lg border border-slate-200 bg-white">
-  <table class="min-w-full divide-y divide-slate-200 text-sm">
-    <thead class="bg-slate-50 text-left text-xs font-semibold text-slate-500 uppercase"><tr><th class="px-3 py-2">Invoice</th><th class="px-3 py-2">Patient</th><th class="px-3 py-2">Issued</th><th class="num px-3 py-2 text-right">Age (days)</th><th class="px-3 py-2">Bucket</th><th class="num px-3 py-2 text-right">Balance</th></tr></thead>
-    <tbody class="divide-y divide-slate-100">
+<div class="mt-2 table-wrap">
+  <table class="table">
+    <thead><tr><th class="px-3 py-2">Invoice</th><th class="px-3 py-2">Patient</th><th class="px-3 py-2">Issued</th><th class="num px-3 py-2 text-right">Age (days)</th><th class="px-3 py-2">Bucket</th><th class="num px-3 py-2 text-right">Balance</th></tr></thead>
+    <tbody>
       {% for row in r.outstanding %}
         <tr><td class="px-3 py-2 font-mono">{{ row.invoice.number }}</td><td class="px-3 py-2">{{ row.invoice.patient.full_name }}</td><td class="px-3 py-2">{{ row.invoice.issued_at|date:"d M Y" }}</td><td class="num px-3 py-2 text-right">{{ row.age }}</td><td class="px-3 py-2">{{ row.bucket }}</td><td class="num px-3 py-2 text-right whitespace-nowrap">{{ row.invoice.balance_amount|rupees }}</td></tr>
       {% empty %}

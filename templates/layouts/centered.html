@@ -1,11 +1,17 @@
 {% extends "base.html" %}
 
+{# Standalone pages (login, 403, 404): one centered card on a soft background. #}
 {% block body %}
-  <main class="mx-auto flex min-h-screen max-w-md flex-col justify-center px-4 py-10">
-    <p class="mb-6 text-center text-lg font-semibold tracking-tight text-slate-900">HMS</p>
-    {% include "partials/messages.html" %}
-    <section class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-      {% block content %}{% endblock %}
-    </section>
-  </main>
+  <div class="min-h-screen bg-gradient-to-b from-primary-50 to-slate-50">
+    <main id="main" tabindex="-1" class="mx-auto flex min-h-screen max-w-md flex-col justify-center px-4 py-10 focus:outline-none">
+      <p class="mb-6 text-center">
+        <span class="block text-2xl font-semibold tracking-tight text-primary-700">HMS</span>
+        <span class="block text-sm text-slate-500">Hospital Management System</span>
+      </p>
+      {% include "partials/messages.html" %}
+      <section class="card card-body sm:p-8">
+        {% block content %}{% endblock %}
+      </section>
+    </main>
+  </div>
 {% endblock %}

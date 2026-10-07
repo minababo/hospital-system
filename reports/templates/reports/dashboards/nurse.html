@@ -2,17 +2,19 @@
 
 {% block title %}Nurse Dashboard{% endblock %}
 
-{% block content %}
-  <div class="flex flex-wrap items-center justify-between gap-3">
-    <h1 class="text-2xl font-semibold text-slate-900">Nurse Dashboard</h1>
-    <div class="flex flex-wrap gap-2">
-      <a href="{% url 'admissions:admission_list' %}" class="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Admissions</a>
-      <a href="{% url 'admissions:bed_board' %}" class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Bed board</a>
-    </div>
+{% block page_title %}Nurse Dashboard{% endblock %}
+{% block page_actions %}
+  <div class="flex flex-wrap gap-2">
+    <a href="{% url 'admissions:admission_list' %}" class="btn btn-primary">Admissions</a>
+    <a href="{% url 'admissions:bed_board' %}" class="btn btn-secondary">Bed board</a>
   </div>
+
+{% endblock %}
+
+{% block content %}
   {% include "reports/partials/cards.html" %}
 
-  <section class="mt-6 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+  <section class="mt-6 card card-body">
     <h2 class="text-lg font-semibold text-slate-900">Checked in today</h2>
     <ul class="mt-3 divide-y divide-slate-100 text-sm">
       {% for appointment in checked_in %}
@@ -20,7 +22,7 @@
           <a href="{% url 'appointments:appointment_detail' appointment.pk %}" class="hover:underline">{{ appointment.start_time|time:"H:i" }} &middot; {{ appointment.patient.full_name }} &middot; {{ appointment.doctor }}</a>
         </li>
       {% empty %}
-        <li class="py-2 text-slate-500">Nobody is checked in right now.</li>
+        <li>{% include "partials/empty_state.html" with message="Nobody is checked in right now." %}</li>
       {% endfor %}
     </ul>
   </section>
