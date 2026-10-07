@@ -288,6 +288,41 @@ booking or cancel those appointments; reception has to reschedule them.
 | Employees, daily and monthly attendance, leave list, approve / reject / record leave | Admin |
 | My leave (request, see decisions, cancel before it starts) | Any user linked to a current employee record |
 
+## Dashboards and reports
+
+**Dashboards** (`/dashboard/`) show live numbers for the logged-in role. A card links to the
+matching page only if that role may open it.
+
+| Role | Dashboard shows |
+|------|-----------------|
+| Admin | Patients (and new this month), today's appointments by status, collected today / this month, outstanding balance, lab requests (urgent), pharmacy alerts, bed occupancy, pending leave, staff present today |
+| Receptionist | Next 10 appointments today, checked-in count, total patients, unpaid invoices and outstanding balance |
+| Doctor | Own appointments today with the next step (start / open consultation, view record), waiting patients, own draft consultations, own lab results released in the last 7 days (abnormal count), own inpatients |
+| Nurse | Patients checked in today, current inpatients and bed occupancy, pending lab requests |
+| Lab Staff | Requested, sample collected, urgent open, completed today |
+| Pharmacist | Prescriptions waiting to be dispensed, stock alerts, dispenses today |
+| Accountant | Collected today / this month by payment method, outstanding balance, invoices issued today, unbilled charges |
+
+**Reports** (`/reports/`) cover a date range (this month by default, at most 366 days), and can be
+printed (`?print=1`) or exported as CSV (`?export=csv`). Days are Sri Lankan calendar days.
+
+| Report | Who | CSV contains |
+|--------|-----|--------------|
+| Patients: registrations per day, gender, age band, admissions, discharges, average stay | Admin, Receptionist | Patients registered in the range |
+| Appointments: by status, doctor, department and day; cancellation and no-show rates | Admin, Receptionist, Doctor (own only) | Appointments by doctor |
+| Revenue: payments per day and method, invoiced by charge type, discounts, outstanding invoices with age buckets | Admin, Accountant | Outstanding invoices (as of today) |
+| Pharmacy: dispensed by medicine, adjustments and write-offs, stock value, alerts | Admin, Pharmacist | Medicines dispensed |
+| Laboratory: orders by status, tests ordered and revenue, turnaround vs target, abnormal results | Admin, Lab Staff | Per-test figures |
+| Staff: headcount by department and category, monthly attendance, leave taken | Admin | Monthly attendance summary |
+
+**Revenue means payments received** (voided payments excluded). Invoiced amounts are shown for
+reference, and outstanding invoices are always as of today. Stock value is usable stock at the
+current selling price.
+
+**CSV safety:** any text cell starting with `=`, `+`, `-`, `@`, a tab or a carriage return is
+prefixed with `'`, so a spreadsheet never runs it as a formula. Money is written as plain numbers
+(e.g. `1500.00`).
+
 ## File storage
 
 Patient documents (PDF, JPG, PNG up to `MAX_UPLOAD_MB`) are stored in a **private** Supabase

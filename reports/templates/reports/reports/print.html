@@ -1,0 +1,9 @@
+{% extends "print/base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+{% block heading %}{{ title }} &middot; {{ date_from|date:"d M Y" }} – {{ date_to|date:"d M Y" }}{% endblock %}
+
+{% block content %}
+  {# Same body as the screen page; Tailwind classes are simply ignored here. #}
+  {% include body_template %}
+{% endblock %}

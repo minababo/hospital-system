@@ -10,10 +10,5 @@
       <a href="{% url 'laboratory:walk_in' %}" class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Walk-in request</a>
     </div>
   </div>
-  <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-    {% include "reports/partials/stat_card.html" with label="Pending test requests" %}
-    {% include "reports/partials/stat_card.html" with label="Tests in progress" %}
-    {% include "reports/partials/stat_card.html" with label="Completed today" %}
-    {% include "reports/partials/stat_card.html" with label="Results awaiting upload" %}
-  </div>
+  {% include "reports/partials/cards.html" %}
 {% endblock %}

@@ -21,7 +21,7 @@
     <form method="get" class="mt-4 grid gap-3 sm:grid-cols-5">
       <input type="hidden" name="tab" value="{{ tab }}">
       <input type="search" name="q" value="{{ form.q.value|default:'' }}" placeholder="Patient name, MRN or ADM-000123" class="sm:col-span-2">
-      {% if tab == "inpatients" %}{{ form.ward }}{% else %}{{ form.date_from }}{{ form.date_to }}{% endif %}
+      {% if tab == "inpatients" %}{{ form.ward }}{% if is_doctor %}<label class="flex items-center gap-2 text-sm">{{ form.mine }} My inpatients</label>{% endif %}{% else %}{{ form.date_from }}{{ form.date_to }}{% endif %}
       <button type="submit" class="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Filter</button>
     </form>
 

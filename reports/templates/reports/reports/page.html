@@ -1,0 +1,25 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+  <a href="{% url 'reports:index' %}" class="text-sm text-slate-600 hover:text-slate-900">&larr; All reports</a>
+  <div class="mt-2 flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-2xl font-semibold text-slate-900">{{ title }}</h1>
+    <div class="flex flex-wrap gap-2">
+      <a href="{% querystring export='csv' print=None %}" class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50" title="CSV of {{ csv_description }}">Export CSV</a>
+      <a href="{% querystring print='1' export=None %}" target="_blank" rel="noopener" class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50">Print</a>
+    </div>
+  </div>
+
+  <form method="get" class="mt-4 flex flex-wrap items-end gap-3">
+    <label class="text-sm font-medium text-slate-700">From <input type="date" name="date_from" value="{{ date_from|date:'Y-m-d' }}" class="mt-1"></label>
+    <label class="text-sm font-medium text-slate-700">To <input type="date" name="date_to" value="{{ date_to|date:'Y-m-d' }}" class="mt-1"></label>
+    <button type="submit" class="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Show</button>
+  </form>
+  {% for error in form.non_field_errors %}<p class="mt-2 text-sm text-red-600">{{ error }} Showing this month instead.</p>{% endfor %}
+  {% for field in form %}{% for error in field.errors %}<p class="mt-2 text-sm text-red-600">{{ field.label }}: {{ error }}</p>{% endfor %}{% endfor %}
+  <p class="mt-2 text-sm text-slate-500">{{ date_from|date:"d M Y" }} – {{ date_to|date:"d M Y" }}. Export CSV downloads the {{ csv_description }}.</p>
+
+  <div class="mt-6">{% include body_template %}</div>
+{% endblock %}
