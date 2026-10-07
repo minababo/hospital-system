@@ -13,10 +13,10 @@
 
 <h2 class="mt-6 font-semibold">Per test</h2>
 <p class="text-xs text-slate-500">Ordered and revenue: orders created in the range. Turnaround and abnormal results: orders released in the range (hours from request to release, against the test's target).</p>
-<div class="mt-2 overflow-x-auto rounded-lg border border-slate-200 bg-white">
-  <table class="min-w-full divide-y divide-slate-200 text-sm">
-    <thead class="bg-slate-50 text-left text-xs font-semibold text-slate-500 uppercase"><tr><th class="px-3 py-2">Test</th><th class="num px-3 py-2 text-right">Ordered</th><th class="num px-3 py-2 text-right">Revenue</th><th class="num px-3 py-2 text-right">Completed</th><th class="num px-3 py-2 text-right">Avg hours</th><th class="num px-3 py-2 text-right">Target</th><th class="num px-3 py-2 text-right">Over target</th><th class="num px-3 py-2 text-right">Abnormal</th></tr></thead>
-    <tbody class="divide-y divide-slate-100">
+<div class="mt-2 table-wrap">
+  <table class="table">
+    <thead><tr><th class="px-3 py-2">Test</th><th class="num px-3 py-2 text-right">Ordered</th><th class="num px-3 py-2 text-right">Revenue</th><th class="num px-3 py-2 text-right">Completed</th><th class="num px-3 py-2 text-right">Avg hours</th><th class="num px-3 py-2 text-right">Target</th><th class="num px-3 py-2 text-right">Over target</th><th class="num px-3 py-2 text-right">Abnormal</th></tr></thead>
+    <tbody>
       {% for t in r.per_test %}
         <tr>
           <td class="px-3 py-2">{{ t.name }} <span class="font-mono text-xs text-slate-500">{{ t.code }}</span></td>
@@ -25,7 +25,7 @@
           <td class="num px-3 py-2 text-right">{{ t.completed }}</td>
           <td class="num px-3 py-2 text-right">{{ t.average_hours|default:"—" }}</td>
           <td class="num px-3 py-2 text-right">{{ t.target }} h</td>
-          <td class="num px-3 py-2 text-right {% if t.over_target %}font-semibold text-red-700{% endif %}">{{ t.over_target }}</td>
+          <td class="num px-3 py-2 text-right {% if t.over_target %}font-semibold text-rose-700{% endif %}">{{ t.over_target }}</td>
           <td class="num px-3 py-2 text-right">{{ t.abnormal }}/{{ t.numeric }} ({{ t.abnormal_rate }}%)</td>
         </tr>
       {% empty %}

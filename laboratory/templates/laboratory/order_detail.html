@@ -2,19 +2,20 @@
 
 {% block title %}Lab order {{ order.number }}{% endblock %}
 
-{% block content %}
-  <a href="{% url 'laboratory:worklist' %}" class="text-sm text-slate-600 hover:text-slate-900">&larr; Back to laboratory</a>
-  <div class="mt-2 flex flex-wrap items-center justify-between gap-3">
-    <h1 class="text-2xl font-semibold text-slate-900">Lab order <span class="font-mono">{{ order.number }}</span></h1>
-    <div class="flex items-center gap-2">
-      {% include "laboratory/partials/status_badge.html" %}
-      {% if order.status == "COMPLETED" %}
-        <a href="{% url 'laboratory:report_print' order.pk %}" target="_blank" rel="noopener" class="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50">Print report</a>
-      {% endif %}
-    </div>
+{% block page_breadcrumb %}<a href="{% url 'laboratory:worklist' %}" class="text-sm text-slate-600 hover:text-slate-900">&larr; Back to laboratory</a>{% endblock %}
+{% block page_title %}Lab order <span class="font-mono">{{ order.number }}</span>{% endblock %}
+{% block page_actions %}
+  <div class="flex items-center gap-2">
+    {% include "laboratory/partials/status_badge.html" %}
+    {% if order.status == "COMPLETED" %}
+      <a href="{% url 'laboratory:report_print' order.pk %}" target="_blank" rel="noopener" class="btn btn-secondary btn-sm">Print report</a>
+    {% endif %}
   </div>
 
-  <section class="mt-6 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+{% endblock %}
+
+{% block content %}
+  <section class="mt-6 card p-4">
     <div class="flex flex-wrap items-baseline gap-x-6 gap-y-1 text-sm">
       <span class="text-lg font-semibold text-slate-900">{{ order.patient.full_name }}</span>
       <span class="font-mono text-slate-500">{{ order.patient.mrn }}</span>
@@ -23,29 +24,29 @@
     </div>
   </section>
 
-  <dl class="mt-4 grid gap-4 rounded-lg border border-slate-200 bg-white p-6 text-sm shadow-sm sm:grid-cols-2 lg:grid-cols-3">
+  <dl class="mt-4 grid gap-4 card card-body text-sm sm:grid-cols-2 lg:grid-cols-3">
     <div><dt class="text-slate-500">Requested by</dt><dd class="mt-1 font-medium">{{ order.requested_by }}</dd></div>
     <div><dt class="text-slate-500">Requested</dt><dd class="mt-1 font-medium">{{ order.created_at|date:"d M Y H:i" }}</dd></div>
     <div><dt class="text-slate-500">Priority</dt><dd class="mt-1 font-medium">{{ order.get_priority_display }}</dd></div>
     {% if order.clinical_notes %}<div class="sm:col-span-2 lg:col-span-3"><dt class="text-slate-500">Clinical notes</dt><dd class="mt-1 whitespace-pre-line">{{ order.clinical_notes }}</dd></div>{% endif %}
     {% if order.sample_collected_at %}<div><dt class="text-slate-500">Sample collected</dt><dd class="mt-1 font-medium">{{ order.sample_collected_at|date:"d M Y H:i" }} by {{ order.sample_collected_by|default:"—" }}{% if order.sample_notes %}<span class="block text-xs font-normal text-slate-500">{{ order.sample_notes }}</span>{% endif %}</dd></div>{% endif %}
     {% if order.released_at %}<div><dt class="text-slate-500">Released</dt><dd class="mt-1 font-medium">{{ order.released_at|date:"d M Y H:i" }} by {{ order.released_by|default:"—" }}</dd></div>{% endif %}
-    {% if order.cancelled_at %}<div class="sm:col-span-2"><dt class="text-slate-500">Cancelled</dt><dd class="mt-1 font-medium text-red-700">{{ order.cancelled_at|date:"d M Y H:i" }} by {{ order.cancelled_by|default:"—" }}: {{ order.cancel_reason }}</dd></div>{% endif %}
+    {% if order.cancelled_at %}<div class="sm:col-span-2"><dt class="text-slate-500">Cancelled</dt><dd class="mt-1 font-medium text-rose-700">{{ order.cancelled_at|date:"d M Y H:i" }} by {{ order.cancelled_by|default:"—" }}: {{ order.cancel_reason }}</dd></div>{% endif %}
   </dl>
 
   {% for item, rows in items %}
-    <section class="mt-4 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+    <section class="mt-4 card card-body">
       <div class="flex flex-wrap items-center justify-between gap-2">
         <h2 class="font-semibold text-slate-900">{{ item.test.name }} <span class="font-mono text-xs text-slate-500">{{ item.test.code }} &middot; {{ item.test.get_specimen_type_display }}</span></h2>
         {% if can_enter_results %}
-          <a href="{% url 'laboratory:result_entry' order.pk item.pk %}" class="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50">Enter results</a>
+          <a href="{% url 'laboratory:result_entry' order.pk item.pk %}" class="btn btn-secondary btn-sm">Enter results</a>
         {% endif %}
       </div>
-      <table class="mt-3 min-w-full divide-y divide-slate-200 text-sm">
-        <thead class="text-left text-xs font-semibold tracking-wide text-slate-500 uppercase">
+      <div class="mt-3 overflow-x-auto"><table class="table">
+        <thead>
           <tr><th class="py-2 pr-4">Parameter</th><th class="py-2 pr-4">Result</th><th class="py-2 pr-4">Unit</th><th class="py-2">Reference</th></tr>
         </thead>
-        <tbody class="divide-y divide-slate-100">
+        <tbody>
           {% for parameter, result in rows %}
             <tr>
               <td class="py-2 pr-4">{{ parameter.name }}</td>
@@ -55,12 +56,12 @@
             </tr>
           {% endfor %}
         </tbody>
-      </table>
+      </table></div>
       {% if item.comment %}<p class="mt-2 text-sm"><span class="text-slate-500">Comment:</span> {{ item.comment }}</p>{% endif %}
     </section>
   {% endfor %}
 
-  <section class="mt-4 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+  <section class="mt-4 card card-body">
     <h2 class="font-semibold text-slate-900">Report files</h2>
     <ul class="mt-2 divide-y divide-slate-100 text-sm">
       {% for report in order.reports.all %}
@@ -69,7 +70,7 @@
           <a href="{% url 'patients:document_view' order.patient.pk report.document.pk %}" target="_blank" rel="noopener" class="hover:underline">View</a>
         </li>
       {% empty %}
-        <li class="py-2 text-slate-500">No files uploaded.</li>
+        <li>{% include "partials/empty_state.html" with message="No files uploaded." %}</li>
       {% endfor %}
     </ul>
     {% if can_upload %}
@@ -78,7 +79,7 @@
         {% include "partials/form_field.html" with field=report_form.file %}
         {% include "partials/form_field.html" with field=report_form.description %}
         <input type="hidden" name="category" value="LAB_REPORT">
-        <div class="flex items-end"><button type="submit" class="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">Upload</button></div>
+        <div class="flex items-end"><button type="submit" class="btn btn-secondary btn-sm">Upload</button></div>
       </form>
     {% endif %}
   </section>
@@ -88,13 +89,13 @@
       <form method="post" action="{% url 'laboratory:collect' order.pk %}" class="flex flex-wrap gap-2">
         {% csrf_token %}
         <input type="text" name="notes" placeholder="Sample notes (optional)" class="max-w-xs">
-        <button type="submit" class="rounded-md bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-500">Mark sample collected</button>
+        <button type="submit" class="btn btn-primary">Mark sample collected</button>
       </form>
     {% endif %}
     {% if can_release %}
       <form method="post" action="{% url 'laboratory:release' order.pk %}" onsubmit="return confirm('Release these results? They can no longer be edited.');">
         {% csrf_token %}
-        <button type="submit" class="rounded-md bg-green-700 px-4 py-2 text-sm font-medium text-white hover:bg-green-600">Release results</button>
+        <button type="submit" class="btn btn-primary">Release results</button>
       </form>
     {% endif %}
   </div>
@@ -103,7 +104,7 @@
     <form method="post" action="{% url 'laboratory:cancel' order.pk %}" class="mt-4 flex max-w-md flex-wrap items-end gap-2">
       {% csrf_token %}
       <div class="grow">{% include "partials/form_field.html" with field=cancel_form.reason %}</div>
-      <button type="submit" class="rounded-md bg-red-700 px-3 py-2 text-sm font-medium text-white hover:bg-red-600">Cancel order</button>
+      <button type="submit" class="btn btn-danger btn-sm">Cancel order</button>
     </form>
   {% endif %}
 {% endblock %}

@@ -2,24 +2,24 @@
 
 {% block title %}Stock alerts{% endblock %}
 
-{% block content %}
-  <h1 class="text-2xl font-semibold text-slate-900">Stock alerts</h1>
-  <p class="mt-1 text-sm text-slate-500">"Expiring soon" means within {{ warning_days }} days.</p>
+{% block page_title %}Stock alerts{% endblock %}
+{% block page_subtitle %}"Expiring soon" means within {{ warning_days }} days.{% endblock %}
 
+{% block content %}
   <div class="mt-6 grid gap-4 lg:grid-cols-2">
-    <section class="rounded-lg border border-red-200 bg-white p-6 shadow-sm">
-      <h2 class="font-semibold text-red-800">Expired ({{ expired|length }})</h2>
+    <section class="card card-body border-rose-200">
+      <h2 class="font-semibold text-rose-800">Expired ({{ expired|length }})</h2>
       <ul class="mt-2 divide-y divide-slate-100 text-sm">
         {% for batch in expired %}
           <li class="flex justify-between gap-2 py-2">
             <a href="{% url 'pharmacy:inventory_detail' batch.medicine_id %}" class="hover:underline">{{ batch.medicine }} &middot; <span class="font-mono">{{ batch.batch_number }}</span></a>
             <span>{{ batch.quantity_on_hand }} units &middot; {{ batch.expiry_date|date:"d M Y" }}</span>
           </li>
-        {% empty %}<li class="py-2 text-slate-500">None</li>{% endfor %}
+        {% empty %}<li>{% include "partials/empty_state.html" with message="None" %}</li>{% endfor %}
       </ul>
     </section>
 
-    <section class="rounded-lg border border-amber-200 bg-white p-6 shadow-sm">
+    <section class="card card-body border-amber-200">
       <h2 class="font-semibold text-amber-800">Expiring soon ({{ expiring_soon|length }})</h2>
       <ul class="mt-2 divide-y divide-slate-100 text-sm">
         {% for batch in expiring_soon %}
@@ -27,11 +27,11 @@
             <a href="{% url 'pharmacy:inventory_detail' batch.medicine_id %}" class="hover:underline">{{ batch.medicine }} &middot; <span class="font-mono">{{ batch.batch_number }}</span></a>
             <span>{{ batch.quantity_on_hand }} units &middot; {{ batch.expiry_date|date:"d M Y" }}</span>
           </li>
-        {% empty %}<li class="py-2 text-slate-500">None</li>{% endfor %}
+        {% empty %}<li>{% include "partials/empty_state.html" with message="None" %}</li>{% endfor %}
       </ul>
     </section>
 
-    <section class="rounded-lg border border-amber-200 bg-white p-6 shadow-sm">
+    <section class="card card-body border-amber-200">
       <h2 class="font-semibold text-amber-800">Low stock ({{ low_stock|length }})</h2>
       <ul class="mt-2 divide-y divide-slate-100 text-sm">
         {% for medicine in low_stock %}
@@ -39,16 +39,16 @@
             <a href="{% url 'pharmacy:inventory_detail' medicine.pk %}" class="hover:underline">{{ medicine }}</a>
             <span>{{ medicine.usable_stock }} left (reorder at {{ medicine.reorder_level }})</span>
           </li>
-        {% empty %}<li class="py-2 text-slate-500">None</li>{% endfor %}
+        {% empty %}<li>{% include "partials/empty_state.html" with message="None" %}</li>{% endfor %}
       </ul>
     </section>
 
-    <section class="rounded-lg border border-red-200 bg-white p-6 shadow-sm">
-      <h2 class="font-semibold text-red-800">Out of stock ({{ out_of_stock|length }})</h2>
+    <section class="card card-body border-rose-200">
+      <h2 class="font-semibold text-rose-800">Out of stock ({{ out_of_stock|length }})</h2>
       <ul class="mt-2 divide-y divide-slate-100 text-sm">
         {% for medicine in out_of_stock %}
           <li class="py-2"><a href="{% url 'pharmacy:inventory_detail' medicine.pk %}" class="hover:underline">{{ medicine }}</a></li>
-        {% empty %}<li class="py-2 text-slate-500">None</li>{% endfor %}
+        {% empty %}<li>{% include "partials/empty_state.html" with message="None" %}</li>{% endfor %}
       </ul>
     </section>
   </div>

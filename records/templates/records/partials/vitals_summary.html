@@ -12,5 +12,5 @@
   </dl>
   <p class="mt-2 text-xs text-slate-500">Recorded {{ vitals.recorded_at|date:"d M Y H:i" }} by {{ vitals.recorded_by|default:"—" }}</p>
 {% else %}
-  <p class="text-sm text-slate-500">No vitals recorded.</p>
+  {% include "partials/empty_state.html" with message="No vitals recorded." %}
 {% endif %}

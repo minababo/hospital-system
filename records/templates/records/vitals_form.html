@@ -2,12 +2,13 @@
 
 {% block title %}Record vitals{% endblock %}
 
+{% block page_breadcrumb %}<a href="{% url 'appointments:appointment_detail' appointment.pk %}" class="text-sm text-slate-600 hover:text-slate-900">&larr; Back to appointment</a>{% endblock %}
+{% block page_title %}Record vitals{% endblock %}
+
 {% block content %}
-  <a href="{% url 'appointments:appointment_detail' appointment.pk %}" class="text-sm text-slate-600 hover:text-slate-900">&larr; Back to appointment</a>
-  <h1 class="mt-2 text-2xl font-semibold text-slate-900">Record vitals</h1>
   <p class="mt-1 text-sm text-slate-600">{{ appointment.patient }} &middot; {{ appointment.date|date:"d M Y" }} {{ appointment.start_time|time:"H:i" }}</p>
 
-  <form method="post" class="mt-6 max-w-3xl rounded-lg border border-slate-200 bg-white p-6 shadow-sm" novalidate>
+  <form method="post" class="mt-6 max-w-3xl card card-body" novalidate>
     {% csrf_token %}
     {% include "partials/form_errors.html" %}
     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -16,6 +17,6 @@
       {% endfor %}
     </div>
     <p class="mt-3 text-xs text-slate-500">Leave any measurement blank if it wasn't taken.</p>
-    <button type="submit" class="mt-4 rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Save vitals</button>
+    <button type="submit" class="mt-4 btn btn-primary">Save vitals</button>
   </form>
 {% endblock %}

@@ -3,26 +3,25 @@
 
 {% block title %}{{ medicine.name }} stock{% endblock %}
 
-{% block content %}
-  <a href="{% url 'pharmacy:inventory_list' %}" class="text-sm text-slate-600 hover:text-slate-900">&larr; Back to inventory</a>
-  <div class="mt-2 flex flex-wrap items-center justify-between gap-3">
-    <div>
-      <h1 class="text-2xl font-semibold text-slate-900">{{ medicine }}</h1>
-      <p class="text-sm text-slate-500">{{ medicine.unit_price|rupees }} per unit &middot; reorder at {{ medicine.reorder_level }}</p>
-    </div>
-    <div class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-right shadow-sm">
-      <p class="text-xs text-slate-500 uppercase">Usable stock</p>
-      <p class="text-xl font-semibold text-slate-900">{{ usable_stock }}</p>
-    </div>
+{% block page_breadcrumb %}<a href="{% url 'pharmacy:inventory_list' %}" class="text-sm text-slate-600 hover:text-slate-900">&larr; Back to inventory</a>{% endblock %}
+{% block page_title %}{{ medicine }}{% endblock %}
+{% block page_subtitle %}{{ medicine.unit_price|rupees }} per unit &middot; reorder at {{ medicine.reorder_level }}{% endblock %}
+{% block page_actions %}
+  <div class="card px-4 py-2 text-right">
+    <p class="text-xs text-slate-500 uppercase">Usable stock</p>
+    <p class="text-xl font-semibold text-slate-900">{{ usable_stock }}</p>
   </div>
 
-  <section class="mt-6 overflow-x-auto rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+{% endblock %}
+
+{% block content %}
+  <section class="mt-6 card card-body overflow-x-auto">
     <h2 class="text-lg font-semibold text-slate-900">Batches</h2>
-    <table class="mt-3 min-w-full divide-y divide-slate-200 text-sm">
-      <thead class="text-left text-xs font-semibold tracking-wide text-slate-500 uppercase">
+    <table class="mt-3 table">
+      <thead>
         <tr><th class="py-2 pr-4">Batch</th><th class="py-2 pr-4">Expiry</th><th class="py-2 pr-4">Received</th><th class="py-2 pr-4 text-right">On hand</th><th class="py-2 pr-4">Supplier</th><th class="py-2">Actions</th></tr>
       </thead>
-      <tbody class="divide-y divide-slate-100">
+      <tbody>
         {% for batch in batches %}
           <tr class="align-top">
             <td class="py-2 pr-4 font-mono">{{ batch.batch_number }}</td>
@@ -37,54 +36,54 @@
                   {% csrf_token %}
                   <input type="number" name="quantity_change" placeholder="e.g. -3" required class="max-w-24">
                   <input type="text" name="reason" placeholder="Reason" required class="max-w-48">
-                  <button type="submit" class="rounded-md border border-slate-300 px-2 py-1 text-xs">Save</button>
+                  <button type="submit" class="btn btn-secondary btn-sm">Save</button>
                 </form>
               </details>
               {% if batch.expiry_date < today and batch.quantity_on_hand %}
                 <form method="post" action="{% url 'pharmacy:write_off' batch.pk %}" class="mt-1" onsubmit="return confirm('Write off all remaining units of this expired batch?');">
-                  {% csrf_token %}<button type="submit" class="text-red-700 hover:underline">Write off</button>
+                  {% csrf_token %}<button type="submit" class="text-rose-700 hover:underline">Write off</button>
                 </form>
               {% endif %}
             </td>
           </tr>
         {% empty %}
-          <tr><td colspan="6" class="py-3 text-slate-500">No stock received yet.</td></tr>
+          <tr><td colspan="6">{% include "partials/empty_state.html" with message="No stock received yet." %}</td></tr>
         {% endfor %}
       </tbody>
     </table>
   </section>
 
   {% if medicine.is_active %}
-    <form method="post" action="{% url 'pharmacy:receive_stock' medicine.pk %}" class="mt-4 rounded-lg border border-slate-200 bg-white p-6 shadow-sm" novalidate>
+    <form method="post" action="{% url 'pharmacy:receive_stock' medicine.pk %}" class="mt-4 card card-body" novalidate>
       {% csrf_token %}
       <h2 class="text-lg font-semibold text-slate-900">Receive stock</h2>
       <div class="mt-3 grid gap-3 sm:grid-cols-3">
         {% for field in receive_form %}{% include "partials/form_field.html" %}{% endfor %}
       </div>
-      <button type="submit" class="mt-3 rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Receive</button>
+      <button type="submit" class="mt-3 btn btn-primary">Receive</button>
     </form>
   {% else %}
     <p class="mt-4 text-sm text-slate-500">This medicine is inactive, so stock can't be received.</p>
   {% endif %}
 
-  <section class="mt-4 overflow-x-auto rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+  <section class="mt-4 card card-body overflow-x-auto">
     <h2 class="text-lg font-semibold text-slate-900">Recent movements</h2>
-    <table class="mt-3 min-w-full divide-y divide-slate-200 text-sm">
-      <thead class="text-left text-xs font-semibold tracking-wide text-slate-500 uppercase">
+    <table class="mt-3 table">
+      <thead>
         <tr><th class="py-2 pr-4">When</th><th class="py-2 pr-4">Batch</th><th class="py-2 pr-4">Type</th><th class="py-2 pr-4 text-right">Quantity</th><th class="py-2 pr-4">Reason</th><th class="py-2">By</th></tr>
       </thead>
-      <tbody class="divide-y divide-slate-100">
+      <tbody>
         {% for movement in movements %}
           <tr>
             <td class="py-2 pr-4 whitespace-nowrap">{{ movement.created_at|date:"d M Y H:i" }}</td>
             <td class="py-2 pr-4 font-mono">{{ movement.batch.batch_number }}</td>
             <td class="py-2 pr-4">{{ movement.get_movement_type_display }}</td>
-            <td class="py-2 pr-4 text-right font-medium {% if movement.quantity < 0 %}text-red-700{% else %}text-green-700{% endif %}">{% if movement.quantity > 0 %}+{% endif %}{{ movement.quantity }}</td>
+            <td class="py-2 pr-4 text-right font-medium {% if movement.quantity < 0 %}text-rose-700{% else %}text-emerald-700{% endif %}">{% if movement.quantity > 0 %}+{% endif %}{{ movement.quantity }}</td>
             <td class="py-2 pr-4">{{ movement.reason|default:"—" }}</td>
             <td class="py-2">{{ movement.created_by }}</td>
           </tr>
         {% empty %}
-          <tr><td colspan="6" class="py-3 text-slate-500">No movements yet.</td></tr>
+          <tr><td colspan="6">{% include "partials/empty_state.html" with message="No movements yet." %}</td></tr>
         {% endfor %}
       </tbody>
     </table>

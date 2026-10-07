@@ -3,24 +3,25 @@
 
 {% block title %}Inventory{% endblock %}
 
-{% block content %}
-  <div class="flex flex-wrap items-center justify-between gap-3">
-    <h1 class="text-2xl font-semibold text-slate-900">Inventory</h1>
-    <a href="{% url 'pharmacy:alerts' %}" class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">Stock alerts</a>
-  </div>
+{% block page_title %}Inventory{% endblock %}
+{% block page_actions %}
+  <a href="{% url 'pharmacy:alerts' %}" class="btn btn-secondary">Stock alerts</a>
 
+{% endblock %}
+
+{% block content %}
   <form method="get" class="mt-6 grid gap-3 sm:grid-cols-4">
     <input type="search" name="search" value="{{ filter_form.search.value|default:'' }}" placeholder="Medicine or generic name" class="sm:col-span-2">
     {{ filter_form.status }}
     <div class="flex gap-2">
-      <button type="submit" class="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Filter</button>
-      <a href="{% url 'pharmacy:inventory_list' %}" class="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">Clear</a>
+      <button type="submit" class="btn btn-primary">Filter</button>
+      <a href="{% url 'pharmacy:inventory_list' %}" class="btn btn-secondary">Clear</a>
     </div>
   </form>
 
-  <div class="mt-6 overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
-    <table class="min-w-full divide-y divide-slate-200 text-sm">
-      <thead class="bg-slate-50 text-left text-xs font-semibold tracking-wide text-slate-500 uppercase">
+  <div class="mt-6 table-wrap">
+    <table class="table">
+      <thead>
         <tr>
           <th class="px-4 py-3">Medicine</th>
           <th class="px-4 py-3">Form / strength</th>
@@ -31,7 +32,7 @@
           <th class="px-4 py-3">Status</th>
         </tr>
       </thead>
-      <tbody class="divide-y divide-slate-100">
+      <tbody>
         {% for medicine in medicines %}
           <tr>
             <td class="px-4 py-3 font-medium text-slate-900">
@@ -46,7 +47,7 @@
             <td class="px-4 py-3">{% include "pharmacy/partials/stock_status.html" with status=medicine.stock_status %}</td>
           </tr>
         {% empty %}
-          <tr><td colspan="7" class="px-4 py-6 text-center text-slate-500">No medicines found.</td></tr>
+          <tr><td colspan="7">{% include "partials/empty_state.html" with message="No medicines found." %}</td></tr>
         {% endfor %}
       </tbody>
     </table>

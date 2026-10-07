@@ -12,6 +12,6 @@
       {% endfor %}
     </fieldset>
   {% empty %}
-    <p class="text-sm text-slate-500">No tests are set up in the catalog yet.</p>
+    {% include "partials/empty_state.html" with message="No tests are set up in the catalog yet." %}
   {% endfor %}
 </div>

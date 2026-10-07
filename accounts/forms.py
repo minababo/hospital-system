@@ -51,7 +51,7 @@ class UserUpdateForm(UniqueEmailMixin, forms.ModelForm):
         if self.instance.role == Role.DOCTOR:
             # Disabled fields ignore submitted data and keep the current value.
             role.disabled = True
-            role.help_text = "Doctor accounts are managed under Doctors."
+            role.help_text = "Doctor role is managed under Doctors."
         else:
             role.choices = _without_doctor(role.choices)
 
