@@ -7,6 +7,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from accounts.models import Role
+from audit.services import Action, log_action
 from billing import services as billing_services
 from billing.models import ChargeType
 from pharmacy import services as stock_services
@@ -14,8 +15,6 @@ from pharmacy.dispensing_selectors import DISPENSABLE_STATUSES, item_progress
 from pharmacy.models import Dispense, DispenseItem
 from records import services as records_services
 from records.models import Prescription
-
-# Audit logging of these actions will be added in these services (audit app).
 
 CHARGE_SOURCE = "dispense_item"
 
@@ -107,5 +106,17 @@ def dispense_prescription(*, prescription, quantities, notes, acting_user, now=N
     )
     records_services.update_dispensing_status(
         prescription, fully_dispensed=fully_dispensed, acting_user=acting_user, now=now
+    )
+    items = ", ".join(
+        f"{progress[item_id].item.medicine} × {qty}" for item_id, qty in wanted.items()
+    )
+    log_action(
+        actor=acting_user,
+        action=Action.CREATE,
+        event="pharmacy.prescription.dispensed",
+        obj=dispense,
+        patient=prescription.patient,
+        changes={"items": [None, {str(progress[i].item.medicine): q for i, q in wanted.items()}]},
+        message=f"{dispense.number}: {items}",
     )
     return dispense

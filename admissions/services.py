@@ -17,10 +17,12 @@ from admissions.models import (
     Ward,
     nights_between,
 )
+from audit.services import Action, created_changes, log_action, saved_snapshot, updated_changes
 from billing import services as billing_services
 from billing.models import ChargeType
 
-# Audit logging of these actions will be added in these services (audit app).
+# Each public write records one audit entry as its last step (same transaction).
+# Bed charges are logged by billing.services.post_charge itself.
 # Locking: state changes lock the Admission row first, then Bed rows, always in that
 # order, so concurrent requests queue instead of double-booking a bed.
 
@@ -110,16 +112,31 @@ def create_ward(*, acting_user, **fields):
     ward = Ward(**fields)
     ward.full_clean()
     ward.save()
+    log_action(
+        actor=acting_user,
+        action=Action.CREATE,
+        event="admissions.ward.created",
+        obj=ward,
+        changes=created_changes(ward),
+    )
     return ward
 
 
 @transaction.atomic
 def update_ward(ward, *, acting_user, **fields):
     # A new daily rate applies to new bed periods; open ones keep their copied rate.
+    before = saved_snapshot(ward)
     for name, value in fields.items():
         setattr(ward, name, value)
     ward.full_clean()
     ward.save()
+    log_action(
+        actor=acting_user,
+        action=Action.UPDATE,
+        event="admissions.ward.updated",
+        obj=ward,
+        changes=updated_changes(ward, before),
+    )
     return ward
 
 
@@ -127,8 +144,16 @@ def update_ward(ward, *, acting_user, **fields):
 def set_ward_active(ward, active, *, acting_user):
     if not active and BedAssignment.objects.filter(bed__ward=ward, ended_at__isnull=True).exists():
         raise ValidationError("This ward has patients in it. Move or discharge them first.")
+    was_active = Ward.objects.values_list("is_active", flat=True).get(pk=ward.pk)
     ward.is_active = active
     ward.save(update_fields=["is_active", "updated_at"])
+    log_action(
+        actor=acting_user,
+        action=Action.STATUS_CHANGE,
+        event="admissions.ward.activated" if active else "admissions.ward.deactivated",
+        obj=ward,
+        changes={"is_active": [was_active, active]},
+    )
     return ward
 
 
@@ -137,15 +162,30 @@ def add_bed(ward, *, acting_user, **fields):
     bed = Bed(ward=ward, **fields)
     bed.full_clean()
     bed.save()
+    log_action(
+        actor=acting_user,
+        action=Action.CREATE,
+        event="admissions.bed.created",
+        obj=bed,
+        changes=created_changes(bed),
+    )
     return bed
 
 
 @transaction.atomic
 def update_bed(bed, *, acting_user, **fields):
+    before = saved_snapshot(bed)
     for name, value in fields.items():
         setattr(bed, name, value)
     bed.full_clean()
     bed.save()
+    log_action(
+        actor=acting_user,
+        action=Action.UPDATE,
+        event="admissions.bed.updated",
+        obj=bed,
+        changes=updated_changes(bed, before),
+    )
     return bed
 
 
@@ -154,8 +194,16 @@ def set_bed_active(bed, active, *, acting_user):
     bed = _lock_bed(bed)
     if not active and _bed_is_occupied(bed):
         raise ValidationError("This bed is occupied. Move or discharge the patient first.")
+    was_active = bed.is_active  # bed was just re-read from the database by _lock_bed
     bed.is_active = active
     bed.save(update_fields=["is_active"])
+    log_action(
+        actor=acting_user,
+        action=Action.STATUS_CHANGE,
+        event="admissions.bed.activated" if active else "admissions.bed.deactivated",
+        obj=bed,
+        changes={"is_active": [was_active, active]},
+    )
     return bed
 
 
@@ -209,6 +257,16 @@ def admit_patient(
     admission.full_clean(validate_constraints=False)
     _save_or_raise(admission, "This patient is already admitted.")
     _open_assignment(admission, bed, admitted_at)
+    log_action(
+        actor=acting_user,
+        action=Action.CREATE,
+        event="admissions.admission.admitted",
+        obj=admission,
+        patient=patient,
+        changes=created_changes(admission, ["admitting_doctor", "source", "reason", "admitted_at"])
+        | {"bed": [None, bed]},
+        message=f"Admitted to {bed.ward.name} bed {bed.bed_number}",
+    )
     return admission
 
 
@@ -232,7 +290,17 @@ def transfer_bed(admission, *, new_bed, transferred_at=None, acting_user, now=No
     current.ended_at = when
     current.save(update_fields=["ended_at"])
     _post_assignment_charge(current, acting_user=acting_user)
-    return _open_assignment(admission, new_bed, when)
+    assignment = _open_assignment(admission, new_bed, when)
+    log_action(
+        actor=acting_user,
+        action=Action.UPDATE,
+        event="admissions.admission.transferred",
+        obj=admission,
+        patient=admission.patient,
+        changes={"bed": [current.bed, new_bed]},
+        message=f"Moved to {new_bed.ward.name} bed {new_bed.bed_number}",
+    )
+    return assignment
 
 
 @transaction.atomic
@@ -251,6 +319,14 @@ def add_progress_note(admission, *, note_type, text, acting_user, now=None):
     )
     note.full_clean()
     note.save()
+    log_action(
+        actor=acting_user,
+        action=Action.CREATE,
+        event="admissions.note.added",
+        obj=note,
+        patient=admission.patient,
+        message=f"{note.get_note_type_display()} note on {admission.number}",
+    )
     return note
 
 
@@ -298,4 +374,16 @@ def discharge_patient(
     admission.discharge_summary = summary
     admission.full_clean()
     admission.save()
+    log_action(
+        actor=acting_user,
+        action=Action.STATUS_CHANGE,
+        event="admissions.admission.discharged",
+        obj=admission,
+        patient=admission.patient,
+        changes={
+            "status": [AdmissionStatus.ADMITTED, admission.status],
+            "discharge_type": [None, discharge_type],
+        },
+        message=f"Discharged ({admission.get_discharge_type_display()})",
+    )
     return admission

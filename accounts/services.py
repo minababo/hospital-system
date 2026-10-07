@@ -2,8 +2,10 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 
 from accounts.models import Role, User
+from audit.services import Action, created_changes, log_action, saved_snapshot, updated_changes
 
-# Audit logging of these actions will be added in these services (audit app).
+# Fields recorded in the audit log when a user changes (never the password).
+USER_AUDIT_FIELDS = ("username", "first_name", "last_name", "email", "role", "is_active")
 
 UPDATABLE_FIELDS = {"first_name", "last_name", "email", "role", "is_active"}
 
@@ -19,7 +21,7 @@ def create_user(
     # (which creates both in one transaction) passes allow_doctor=True.
     if role == Role.DOCTOR and not allow_doctor:
         raise ValidationError(DOCTOR_ROLE_MESSAGE)
-    return User.objects.create_user(
+    user = User.objects.create_user(
         username=username,
         password=password,
         role=role,
@@ -27,6 +29,15 @@ def create_user(
         last_name=last_name,
         email=email,
     )
+    log_action(
+        actor=acting_user,
+        action=Action.CREATE,
+        event="accounts.user.created",
+        obj=user,
+        changes=created_changes(user, USER_AUDIT_FIELDS),
+        message=f"Account created with role {user.get_role_display()}",
+    )
+    return user
 
 
 def update_user(user, *, acting_user, **fields):
@@ -49,10 +60,19 @@ def update_user(user, *, acting_user, **fields):
             )
 
     with transaction.atomic():
+        before = saved_snapshot(user, USER_AUDIT_FIELDS)
         for name, value in fields.items():
             setattr(user, name, value)
         user.full_clean()
         user.save()
+        changes = updated_changes(user, before, USER_AUDIT_FIELDS)
+        log_action(
+            actor=acting_user,
+            action=Action.UPDATE,
+            event="accounts.user.role_changed" if "role" in changes else "accounts.user.updated",
+            obj=user,
+            changes=changes,
+        )
     return user
 
 
@@ -60,6 +80,14 @@ def set_user_password(user, password, *, acting_user):
     with transaction.atomic():
         user.set_password(password)
         user.save(update_fields=["password"])
+        # Never the password itself, not even hashed.
+        log_action(
+            actor=acting_user,
+            action=Action.UPDATE,
+            event="accounts.user.password_set",
+            obj=user,
+            message="Password set by an administrator",
+        )
     return user
 
 
@@ -68,6 +96,14 @@ def set_user_active(user, active, *, acting_user):
         raise ValidationError("You cannot deactivate your own account.")
 
     with transaction.atomic():
+        was_active = User.objects.values_list("is_active", flat=True).get(pk=user.pk)
         user.is_active = active
         user.save(update_fields=["is_active"])
+        log_action(
+            actor=acting_user,
+            action=Action.STATUS_CHANGE,
+            event="accounts.user.activated" if active else "accounts.user.deactivated",
+            obj=user,
+            changes={"is_active": [was_active, active]},
+        )
     return user

@@ -5,9 +5,23 @@ from django.utils import timezone
 
 from appointments.models import SLOT_OCCUPYING_STATUSES, Appointment, Status
 from appointments.selectors import available_slots, last_bookable_date, local_now
+from audit.services import Action, log_action
 
-# Audit logging of these actions will be added in these services (audit app).
 # Every function takes now=None so tests can fix the clock instead of using real time.
+# Each records one audit entry as its last step, inside the same transaction.
+
+
+def _log_status(appointment, old_status, *, acting_user, event, message="", extra=None):
+    log_action(
+        actor=acting_user,
+        action=Action.STATUS_CHANGE,
+        event=event,
+        obj=appointment,
+        patient=appointment.patient,
+        changes={"status": [old_status, appointment.status], **(extra or {})},
+        message=message,
+    )
+
 
 SLOT_TAKEN_MESSAGE = "This time slot was just booked by someone else. Please choose another slot."
 
@@ -30,6 +44,14 @@ def book_appointment(*, patient, doctor, date, start_time, reason, acting_user, 
         created_by=acting_user,
     )
     _validate_and_save(appointment)
+    log_action(
+        actor=acting_user,
+        action=Action.CREATE,
+        event="appointments.appointment.booked",
+        obj=appointment,
+        patient=patient,
+        message=f"Booked with {doctor} on {appointment.date:%Y-%m-%d} at {start:%H:%M}",
+    )
     return appointment
 
 
@@ -41,11 +63,20 @@ def reschedule_appointment(appointment, *, date, start_time, acting_user, now=No
         appointment.doctor, date, start_time, now=now, exclude_appointment=appointment
     )
     _check_patient_free(appointment.patient, appointment.doctor, date, start, exclude=appointment)
+    old_date, old_start = appointment.date, appointment.start_time
     appointment.date = date
     appointment.start_time = start
     appointment.end_time = end
     appointment.reschedule_count += 1
     _validate_and_save(appointment)
+    log_action(
+        actor=acting_user,
+        action=Action.UPDATE,
+        event="appointments.appointment.rescheduled",
+        obj=appointment,
+        patient=appointment.patient,
+        changes={"date": [old_date, date], "start_time": [old_start, start]},
+    )
     return appointment
 
 
@@ -119,11 +150,19 @@ def cancel_appointment(appointment, *, reason, acting_user, now=None):
     _transition(appointment, Status.CANCELLED)
     if not reason:
         raise ValidationError("Please give a reason for cancelling.")
+    old_status = appointment.status
     appointment.status = Status.CANCELLED
     appointment.cancel_reason = reason[:255]
     appointment.cancelled_at = now or timezone.now()
     appointment.cancelled_by = acting_user
     appointment.save()
+    _log_status(
+        appointment,
+        old_status,
+        acting_user=acting_user,
+        event="appointments.appointment.cancelled",
+        message=f"Cancelled: {appointment.cancel_reason}",
+    )
     return appointment
 
 
@@ -133,10 +172,17 @@ def check_in_appointment(appointment, *, acting_user, now=None):
     today, _ = local_now(now)
     if appointment.date != today:
         raise ValidationError("Patients can only be checked in on the day of the appointment.")
+    old_status = appointment.status
     appointment.status = Status.CHECKED_IN
     appointment.checked_in_at = now or timezone.now()
     appointment.checked_in_by = acting_user
     appointment.save()
+    _log_status(
+        appointment,
+        old_status,
+        acting_user=acting_user,
+        event="appointments.appointment.checked_in",
+    )
     return appointment
 
 
@@ -151,10 +197,14 @@ def complete_appointment(appointment, *, acting_user, now=None):
     record = getattr(appointment, "medical_record", None)
     if record is None or record.status != "FINALIZED":
         raise ValidationError("Finalize the consultation record before completing the appointment.")
+    old_status = appointment.status
     appointment.status = Status.COMPLETED
     appointment.completed_at = now or timezone.now()
     appointment.completed_by = acting_user
     appointment.save()
+    _log_status(
+        appointment, old_status, acting_user=acting_user, event="appointments.appointment.completed"
+    )
     return appointment
 
 
@@ -163,6 +213,10 @@ def mark_no_show(appointment, *, acting_user, now=None):
     _transition(appointment, Status.NO_SHOW)
     if not appointment.is_past(now):
         raise ValidationError("An appointment can only be marked as a no-show after it starts.")
+    old_status = appointment.status
     appointment.status = Status.NO_SHOW
     appointment.save()
+    _log_status(
+        appointment, old_status, acting_user=acting_user, event="appointments.appointment.no_show"
+    )
     return appointment

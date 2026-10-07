@@ -1,0 +1,9 @@
+{% if entry.action == "CREATE" %}
+  <span class="rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium whitespace-nowrap text-green-700">{{ entry.get_action_display }}</span>
+{% elif entry.action == "DELETE" or entry.action == "LOGIN_FAILED" %}
+  <span class="rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium whitespace-nowrap text-red-700">{{ entry.get_action_display }}</span>
+{% elif entry.action == "UPDATE" or entry.action == "STATUS_CHANGE" %}
+  <span class="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium whitespace-nowrap text-amber-700">{{ entry.get_action_display }}</span>
+{% else %}
+  <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium whitespace-nowrap text-slate-600">{{ entry.get_action_display }}</span>
+{% endif %}
