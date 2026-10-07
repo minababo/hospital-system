@@ -15,6 +15,7 @@ EXPECTED_SIDEBAR = {
         "Staff",
         "Attendance",
         "Leave",
+        "Audit log",
         "Departments",
         "Wards & beds",
         "Doctors",

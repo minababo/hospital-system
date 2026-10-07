@@ -1,6 +1,7 @@
 """One-way app dependencies: lower-level apps must never import the apps built on them."""
 
 import re
+import sys
 from pathlib import Path
 
 import pytest
@@ -134,6 +135,43 @@ def test_no_app_imports_reports(app):
         str(path.relative_to(ROOT))
         for path in (ROOT / app).rglob("*.py")
         if pattern.search(path.read_text(encoding="utf-8"))
+    ]
+
+    assert offenders == []
+
+
+# audit sits underneath everything: every app may call audit.services.log_action, so
+# audit itself may only use accounts (roles), common and Django. Its tests are left
+# out: they exercise other apps' services to check what gets logged.
+AUDIT_ALLOWED_IMPORTS = {"accounts", "audit", "common", "django"}
+
+
+def _imported_roots(text):
+    names = re.findall(r"^\s*(?:from\s+([\w.]+)\s+import|import\s+([\w.]+))", text, re.MULTILINE)
+    return {(a or b).split(".")[0] for a, b in names}
+
+
+def test_audit_imports_only_accounts_common_and_django():
+    offenders = {}
+    for path in (ROOT / "audit").rglob("*.py"):
+        if "tests" in path.relative_to(ROOT).parts:
+            continue
+        roots = _imported_roots(path.read_text(encoding="utf-8"))
+        bad = roots - AUDIT_ALLOWED_IMPORTS - set(sys.stdlib_module_names)
+        if bad:
+            offenders[str(path.relative_to(ROOT))] = sorted(bad)
+
+    assert offenders == {}
+
+
+def test_other_apps_use_only_audit_services():
+    pattern = re.compile(r"^\s*(from|import)\s+audit(?!\.services\b)", re.MULTILINE)
+    offenders = [
+        str(path.relative_to(ROOT))
+        for path in ROOT.glob("*/**/*.py")
+        if path.relative_to(ROOT).parts[0] not in ("audit", ".venv", "tests")
+        and "tests" not in path.relative_to(ROOT).parts
+        and pattern.search(path.read_text(encoding="utf-8"))
     ]
 
     assert offenders == []
