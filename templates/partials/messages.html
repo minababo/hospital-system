@@ -1,13 +1,14 @@
+{# Django messages as alerts, coloured by level. The dismiss button only appears with JavaScript. #}
 {% if messages %}
-  <ul class="mb-6 space-y-2">
+  <div class="mb-6 space-y-2">
     {% for message in messages %}
-      <li class="rounded-md border px-4 py-3 text-sm
-        {% if message.tags == 'error' %}border-red-200 bg-red-50 text-red-800
-        {% elif message.tags == 'success' %}border-green-200 bg-green-50 text-green-800
-        {% elif message.tags == 'warning' %}border-amber-200 bg-amber-50 text-amber-800
-        {% else %}border-slate-200 bg-white text-slate-700{% endif %}">
-        {{ message }}
-      </li>
+      <div role="{% if message.tags == 'error' %}alert{% else %}status{% endif %}"
+           class="alert flex items-start gap-3 {% if message.tags == 'error' %}alert-danger{% elif message.tags == 'success' %}alert-success{% elif message.tags == 'warning' %}alert-warning{% else %}alert-info{% endif %}">
+        <p class="flex-1">{{ message }}</p>
+        <button type="button" class="-my-1 -mr-2 rounded p-1 opacity-70 hover:opacity-100" data-dismiss hidden aria-label="Dismiss">
+          {% include "partials/icon.html" with name="x-mark" class="size-4" %}
+        </button>
+      </div>
     {% endfor %}
-  </ul>
+  </div>
 {% endif %}

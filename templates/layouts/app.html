@@ -1,49 +1,133 @@
 {% extends "base.html" %}
 
 {% block body %}
-  <header class="border-b border-slate-200 bg-white">
-    <div class="flex items-center justify-between gap-3 px-4 py-3">
-      <div class="flex items-center gap-3">
-        <button type="button" id="sidebar-toggle" class="rounded-md border border-slate-300 px-2 py-1 text-sm text-slate-700 md:hidden"
-                aria-controls="sidebar" aria-expanded="false">Menu</button>
-        <a href="{% url 'dashboard' %}" class="text-lg font-semibold tracking-tight text-slate-900">HMS</a>
+  <header class="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
+    <div class="flex h-14 items-center justify-between gap-3 px-4">
+      <div class="flex min-w-0 items-center gap-2">
+        <button type="button" id="nav-open" class="btn btn-ghost btn-sm -ml-2 md:hidden"
+                aria-controls="sidebar" aria-expanded="false" aria-label="Open menu">
+          {% include "partials/icon.html" with name="bars-3" class="size-6" %}
+          <span class="sr-only">Menu</span>
+        </button>
+        <a href="{% url 'dashboard' %}" class="truncate text-base font-semibold tracking-tight text-slate-900">
+          <span class="text-primary-700">HMS</span>
+          <span class="hidden font-normal text-slate-500 sm:inline">Hospital Management System</span>
+        </a>
       </div>
-      <div class="flex items-center gap-3 text-sm">
-        <span class="hidden text-right sm:block">
-          <span class="block font-medium text-slate-900">{{ user.get_full_name|default:user.username }}</span>
-          <span class="block text-xs text-slate-500">{{ user.get_role_display }}</span>
+      <div class="flex items-center gap-2 text-sm sm:gap-3">
+        <span class="hidden items-center gap-2 lg:flex">
+          <span class="font-medium text-slate-900">{{ user.get_full_name|default:user.username }}</span>
+          <span class="badge badge-info">{{ user.get_role_display }}</span>
         </span>
-        <a href="{% url 'accounts:password_change' %}" class="hidden text-slate-600 hover:text-slate-900 sm:inline">Change password</a>
+        <a href="{% url 'accounts:password_change' %}" class="btn btn-ghost btn-sm hidden sm:inline-flex">Change password</a>
         <form method="post" action="{% url 'accounts:logout' %}">
           {% csrf_token %}
-          <button type="submit" class="rounded-md bg-slate-800 px-3 py-1.5 font-medium text-white hover:bg-slate-700">Log out</button>
+          <button type="submit" class="btn btn-secondary btn-sm">
+            {% include "partials/icon.html" with name="arrow-right-start-on-rectangle" class="size-4" %}
+            Log out
+          </button>
         </form>
       </div>
     </div>
   </header>
 
+  {# Dark overlay behind the mobile drawer; clicking it closes the drawer. #}
+  <div id="nav-overlay" class="fixed inset-0 z-40 hidden bg-slate-900/50 md:hidden" aria-hidden="true"></div>
+
   <div class="md:flex">
-    <aside id="sidebar" class="hidden border-b border-slate-200 bg-white md:block md:min-h-[calc(100vh-57px)] md:w-60 md:shrink-0 md:border-r md:border-b-0">
-      <nav class="space-y-1 p-3">
-        {% for item in nav_items %}
-          <a href="{{ item.url }}"
-             class="block rounded-md px-3 py-2 text-sm font-medium {% if item.active %}bg-slate-100 text-slate-900{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}"
-             {% if item.active %}aria-current="page"{% endif %}>{{ item.label }}</a>
+    {# One sidebar: an off-canvas drawer below md, a fixed column from md up. #}
+    <aside id="sidebar" tabindex="-1" aria-label="Main navigation"
+           class="fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] -translate-x-full overflow-y-auto border-r border-slate-200 bg-white
+                  transition-transform duration-200 ease-out focus:outline-none
+                  md:sticky md:top-14 md:z-auto md:h-[calc(100vh-3.5rem)] md:w-60 md:max-w-none md:shrink-0 md:translate-x-0 md:transition-none">
+      <div class="flex h-14 items-center justify-between border-b border-slate-200 px-4 md:hidden">
+        <span class="font-semibold text-slate-900">Menu</span>
+        <button type="button" id="nav-close" class="btn btn-ghost btn-sm -mr-2" aria-label="Close menu">
+          {% include "partials/icon.html" with name="x-mark" class="size-6" %}
+        </button>
+      </div>
+      <div class="border-b border-slate-200 px-4 py-3 lg:hidden">
+        <p class="text-sm font-medium text-slate-900">{{ user.get_full_name|default:user.username }}</p>
+        <span class="badge badge-info mt-1">{{ user.get_role_display }}</span>
+      </div>
+      <nav class="space-y-5 p-3">
+        {% for group in nav_groups %}
+          <div>
+            <p class="px-3 pb-1 text-xs font-semibold tracking-wide text-slate-400 uppercase">{{ group.name }}</p>
+            <ul class="space-y-0.5">
+              {% for item in group.items %}
+                <li>
+                  <a href="{{ item.url }}"
+                     class="relative flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium
+                            {% if item.active %}bg-primary-50 text-primary-700 before:absolute before:inset-y-1 before:left-0 before:w-1 before:rounded-full before:bg-primary-600{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}"
+                     {% if item.active %}aria-current="page"{% endif %}>
+                    {% include "partials/icon.html" with name=item.icon class="size-5" %}
+                    {{ item.label }}
+                  </a>
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
         {% endfor %}
       </nav>
     </aside>
 
-    <main class="min-w-0 flex-1 px-4 py-6 md:px-8">
+    <main id="main" tabindex="-1" class="min-w-0 flex-1 px-4 py-6 focus:outline-none md:px-8">
+      {# Page header: pages fill these blocks instead of writing their own heading row. #}
+      <div class="mb-6">
+        <div class="text-sm empty:hidden">{% block page_breadcrumb %}{% endblock %}</div>
+        <div class="mt-1 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div class="min-w-0">
+            <h1 class="page-title">{% block page_title %}{% endblock %}</h1>
+            <p class="page-subtitle empty:hidden">{% block page_subtitle %}{% endblock %}</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">{% block page_actions %}{% endblock %}</div>
+        </div>
+      </div>
       {% include "partials/messages.html" %}
-      {% block content %}{% endblock %}
+      <div class="page-content">{% block content %}{% endblock %}</div>
     </main>
   </div>
 
   <script>
-    // Show/hide the sidebar on small screens.
-    document.getElementById("sidebar-toggle").addEventListener("click", function () {
-      var hidden = document.getElementById("sidebar").classList.toggle("hidden");
-      this.setAttribute("aria-expanded", String(!hidden));
+    // Mobile navigation drawer (below the md breakpoint). From md up the sidebar is
+    // always visible and none of this has any visible effect.
+    (function () {
+      var sidebar = document.getElementById("sidebar");
+      var overlay = document.getElementById("nav-overlay");
+      var openButton = document.getElementById("nav-open");
+      var closeButton = document.getElementById("nav-close");
+
+      function setOpen(open) {
+        sidebar.classList.toggle("-translate-x-full", !open);
+        overlay.classList.toggle("hidden", !open);
+        document.body.classList.toggle("overflow-hidden", open); // lock page scroll
+        openButton.setAttribute("aria-expanded", String(open));
+        if (open) {
+          sidebar.focus(); // move focus into the drawer
+        } else {
+          openButton.focus(); // and back to the menu button
+        }
+      }
+      function isOpen() {
+        return openButton.getAttribute("aria-expanded") === "true";
+      }
+
+      openButton.addEventListener("click", function () { setOpen(true); });
+      closeButton.addEventListener("click", function () { setOpen(false); });
+      overlay.addEventListener("click", function () { setOpen(false); });
+      document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape" && isOpen()) setOpen(false);
+      });
+      sidebar.querySelectorAll("nav a").forEach(function (link) {
+        link.addEventListener("click", function () { if (isOpen()) setOpen(false); });
+      });
+    })();
+
+    // Message dismiss buttons (without JavaScript the messages simply stay).
+    document.querySelectorAll("[data-dismiss]").forEach(function (button) {
+      button.hidden = false;
+      button.addEventListener("click", function () { button.closest("[role]").remove(); });
     });
 
     // The server ends the session after this many idle seconds. Once that has passed

@@ -1,6 +1,22 @@
-<div>
-  <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-slate-700">{{ field.label }}</label>
-  <div class="mt-1">{{ field }}</div>
-  {% if field.help_text %}<div class="mt-1 text-xs text-slate-500">{{ field.help_text|safe }}</div>{% endif %}
-  {% for error in field.errors %}<p class="mt-1 text-sm text-red-600">{{ error }}</p>{% endfor %}
-</div>
+{% load ui %}
+{# One form field: label (with a * when required), the widget with the right CSS class, help, errors. #}
+{% with kind=field|widget_kind %}
+  <div>
+    {% if kind == "checkbox" %}
+      <label for="{{ field.id_for_label }}" class="flex items-center gap-2 text-sm font-medium text-slate-700">
+        {{ field|add_class:"form-checkbox" }}
+        <span>{{ field.label }}{% if field.field.required %} <span class="text-rose-600" aria-hidden="true">*</span>{% endif %}</span>
+      </label>
+    {% else %}
+      <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}{% if field.field.required %} <span class="text-rose-600" aria-hidden="true">*</span>{% endif %}</label>
+      {% if kind == "select" %}{{ field|add_class:"form-select" }}
+      {% elif kind == "textarea" %}{{ field|add_class:"form-textarea" }}
+      {% elif kind == "file" %}{{ field|add_class:"form-file" }}
+      {% elif kind == "multiple" %}<div class="space-y-1 text-sm">{{ field }}</div>
+      {% else %}{{ field|add_class:"form-input" }}{% endif %}
+    {% endif %}
+    {% if kind == "file" and field.field.widget.attrs.accept %}<p class="form-help">Accepted file types: {{ field.field.widget.attrs.accept|accept_label }}</p>{% endif %}
+    {% if field.help_text %}<p class="form-help">{{ field.help_text|safe }}</p>{% endif %}
+    {% for error in field.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
+  </div>
+{% endwith %}
