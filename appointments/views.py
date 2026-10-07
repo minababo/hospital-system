@@ -5,7 +5,7 @@ from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.decorators import method_decorator
-from django.utils.http import url_has_allowed_host_and_scheme
+from django.utils.http import url_has_allowed_host_and_scheme, urlencode
 from django.views import View
 from django.views.decorators.http import require_POST
 from django.views.generic import DetailView
@@ -25,8 +25,8 @@ from appointments.forms import (
 from appointments.models import Status
 from appointments.permissions import BOOK_ROLES, CHECKIN_ROLES, COMPLETE_ROLES, VIEW_ROLES
 from common.forms import add_service_errors
-from doctors.models import Doctor
-from doctors.selectors import doctor_list
+from doctors.models import Doctor, Weekday
+from doctors.selectors import doctor_list, doctor_weekly_schedule
 from patients.models import Patient
 from patients.selectors import search_patients
 
@@ -205,8 +205,41 @@ class BookView(RoleRequiredMixin, View):
                 "selection": selection,
                 "confirm_form": confirm_form,
                 "slots": slots,
+                **schedule_hints(patient, selection),
             },
         )
+
+
+def schedule_hints(patient, selection):
+    """Booking hints once a doctor is chosen: their weekly hours, a warning when the
+    chosen date isn't a working day, and the next dates with free slots (as links that
+    keep the patient, department and doctor). Read-only; booking rules are unchanged."""
+    data = selection.cleaned_data if selection.is_valid() else {}
+    doctor = data.get("doctor")
+    if doctor is None:
+        return {}
+    schedule = [
+        (day, [block for block in blocks if block.is_active])
+        for day, blocks in doctor_weekly_schedule(doctor)
+    ]
+    working_weekdays = {block.weekday for _, blocks in schedule for block in blocks}
+    date = data.get("date")
+    department = data.get("department")
+    params = {"patient": patient.pk, "doctor": doctor.pk}
+    if department:
+        params["department"] = department.pk
+    next_dates = [
+        (day, "?" + urlencode({**params, "date": day.isoformat()}))
+        for day in selectors.next_available_dates(doctor)
+    ]
+    return {
+        "chosen_doctor": doctor,
+        "schedule": schedule,
+        "off_day": (
+            Weekday(date.weekday()).label if date and date.weekday() not in working_weekdays else ""
+        ),
+        "next_dates": next_dates,
+    }
 
 
 class AppointmentDetailView(RoleRequiredMixin, DetailView):

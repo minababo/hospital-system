@@ -10,6 +10,7 @@ from django.views.generic import FormView, ListView
 from accounts.models import Role
 from accounts.permissions import RoleRequiredMixin, user_has_role
 from common.forms import add_service_errors
+from common.urls import redirect_to_section
 from doctors.models import Doctor
 from laboratory import selectors, services
 from laboratory.forms import (
@@ -295,7 +296,7 @@ class OrderForRecordView(RoleRequiredMixin, View):
         form = LabOrderForm(request.POST)
         if not form.is_valid():
             flash_form_errors(request, form)
-            return redirect("records:record_detail", pk=record.pk)
+            return redirect_to_section("records:record_detail", "lab-tests", record.pk)
         try:
             order = services.order_tests_for_record(
                 record=record,
@@ -308,7 +309,7 @@ class OrderForRecordView(RoleRequiredMixin, View):
             flash_errors(request, error)
         else:
             messages.success(request, f"Lab request {order.number} sent to the laboratory.")
-        return redirect("records:record_detail", pk=record.pk)
+        return redirect_to_section("records:record_detail", "lab-tests", record.pk)
 
 
 # --- Order detail and lab workflow --------------------------------------------------
@@ -392,6 +393,7 @@ class OrderActionView(RoleRequiredMixin, View):
 
     allowed_roles = LAB
     success_message = ""
+    section = None  # e.g. "reports": land on that part of the order page
 
     def post(self, request, pk):
         order = selectors.get_order(pk)
@@ -401,6 +403,8 @@ class OrderActionView(RoleRequiredMixin, View):
             flash_errors(request, error)
         else:
             messages.success(request, self.success_message)
+        if self.section:
+            return redirect_to_section("laboratory:order_detail", self.section, order.pk)
         return redirect("laboratory:order_detail", pk=order.pk)
 
 
@@ -432,6 +436,7 @@ class CancelView(OrderActionView):
 
 class ReportUploadView(OrderActionView):
     success_message = "Report uploaded."
+    section = "reports"
 
     def perform(self, order):
         form = DocumentUploadForm(self.request.POST, self.request.FILES)

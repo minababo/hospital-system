@@ -260,7 +260,7 @@ def render_dispense_page(request, prescription, form=None):
             "form": form,
             "lines": [(row, form[dispensing.field_name(row.item.pk)]) for row in rows],
             "can_dispense": can_dispense,
-            "dispenses": dispensing_selectors.prescription_dispenses(prescription),
+            "log": dispensing_selectors.dispense_log(prescription),
         },
     )
 
