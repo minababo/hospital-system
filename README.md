@@ -118,6 +118,11 @@ same date and time. If two people book the same slot at the same moment, the sec
 friendly "slot was just booked" message instead of an error page. Doctor schedules can't be
 changed in a way that leaves upcoming appointments outside working hours.
 
+**Schedule hints when booking.** Once a doctor is chosen, the booking page shows their weekly
+hours, warns when the chosen date isn't one of their working days, and lists up to five upcoming
+dates (within 30 days and the booking window) that still have a free slot, as one-click links.
+These are hints only: the slot is still checked when the appointment is booked.
+
 ## Medical records
 
 Workflow for a visit:
@@ -231,6 +236,11 @@ onto each result when it's entered, so later catalog changes never alter a relea
 | Cancel an open order | Lab Staff, or the ordering doctor |
 | Print released reports | Admin, Doctor, Nurse, Lab Staff, Receptionist |
 
+**Results table.** Results look the same on the order page, the consultation and treatment
+history: Parameter, Result (numbers right-aligned), Unit, Reference range and Flag
+(**L** in amber, **H** in red), with the lab's comment as the last row. Clinicians only see
+results after the lab releases them.
+
 ## Pharmacy
 
 **Stock is kept per batch.** Each delivery is a batch with its own number and expiry date.
@@ -261,6 +271,12 @@ of stock.
 depend on medical records. Only `pharmacy/dispensing.py` and `dispensing_selectors.py` connect
 prescriptions, stock and billing, and prescription statuses are changed through the records
 app (`records.services.update_dispensing_status`).
+
+**Dispense log for clinicians.** The consultation page and treatment history have a
+**Dispensing** card: prescribed, dispensed and remaining per medicine, then every dispense
+(DSP number, time, pharmacist) with the batches used, e.g. "Batch P-001 (exp 2026-11-30) × 10".
+The pharmacist's dispensing page shows the same log, and dispense events in the patient's
+medical history link straight to the card.
 
 ## Admissions (inpatient and outpatient)
 
