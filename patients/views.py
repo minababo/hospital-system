@@ -12,6 +12,7 @@ from accounts.models import Role
 from accounts.permissions import RoleRequiredMixin, user_has_role
 from appointments.permissions import BOOK_ROLES
 from appointments.selectors import patient_appointments
+from audit.services import Action, log_action
 from common.forms import add_service_errors
 from patients import selectors, services
 from patients.forms import DocumentUploadForm, PatientForm
@@ -102,6 +103,8 @@ class PatientDetailView(RoleRequiredMixin, DetailView):
         context["can_view_treatment"] = user_has_role(user, *VIEW_RECORDS)
         context["can_view_billing"] = user_has_role(user, *BILLING_VIEW_ROLES)
         context["can_view_lab"] = user_has_role(user, *LAB_VIEW_ROLES)
+        # Same as audit.views.AUDIT_ROLES (admin only); the link is just a URL, no import.
+        context["can_view_audit"] = user_has_role(user, Role.ADMIN)
         return context
 
 
@@ -156,11 +159,21 @@ class DocumentView(RoleRequiredMixin, View):
 
     def get(self, request, pk, doc_pk):
         document = selectors.get_patient_document(pk, doc_pk)
+        download = request.GET.get("download") == "1"
         response = FileResponse(
             document.file.open("rb"),
-            as_attachment=request.GET.get("download") == "1",
+            as_attachment=download,
             filename=document.original_name,
             content_type=document.content_type,
+        )
+        # Reading a patient's file is recorded too (after it opened successfully).
+        log_action(
+            actor=request.user,
+            action=Action.VIEW,
+            event="patients.document.downloaded" if download else "patients.document.viewed",
+            obj=document,
+            patient=document.patient,
+            message=document.original_name,
         )
         response["Cache-Control"] = "private, no-store"
         response["X-Content-Type-Options"] = "nosniff"

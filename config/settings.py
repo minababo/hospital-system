@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     "laboratory",
     "admissions",
     "staff",
+    "audit",
 ]
 
 MIDDLEWARE = [
@@ -54,6 +55,8 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    # Makes the IP address and browser available to audit log entries.
+    "audit.middleware.AuditContextMiddleware",
     # Every view requires login unless marked @login_not_required.
     "django.contrib.auth.middleware.LoginRequiredMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
@@ -136,6 +139,11 @@ PHARMACY_EXPIRY_WARNING_DAYS = env.int("PHARMACY_EXPIRY_WARNING_DAYS", default=9
 
 # How far back admission, transfer and discharge times may be entered.
 ADMISSION_BACKDATE_DAYS = env.int("ADMISSION_BACKDATE_DAYS", default=7)
+
+# Use the first X-Forwarded-For address as the client IP in the audit log. Only turn
+# this on behind a proxy that sets the header itself (Render does); otherwise anyone
+# could fake their IP by sending the header.
+AUDIT_TRUST_X_FORWARDED_FOR = env.bool("AUDIT_TRUST_X_FORWARDED_FOR", default=False)
 
 # Render sets RENDER=true on its servers.
 ON_RENDER = env.bool("RENDER", default=False)

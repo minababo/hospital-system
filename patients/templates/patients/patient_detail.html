@@ -10,7 +10,10 @@
       <h1 class="text-2xl font-semibold text-slate-900">{{ patient.full_name }}</h1>
       <p class="font-mono text-sm text-slate-500">{{ patient.mrn }}</p>
     </div>
-    <div class="flex gap-2">
+    <div class="flex flex-wrap gap-2">
+      {% if can_view_audit %}
+        <a href="{% url 'audit:log_list' %}?patient_id={{ patient.pk }}" class="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">Audit trail</a>
+      {% endif %}
       {% if can_view_lab %}
         <a href="{% url 'laboratory:worklist' %}?patient={{ patient.pk }}&status=ALL" class="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">Lab orders</a>
       {% endif %}

@@ -4,6 +4,7 @@ from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
+from audit.services import Action, log_action
 from billing.models import (
     CENT,
     Charge,
@@ -15,7 +16,7 @@ from billing.models import (
 )
 from billing.selectors import uninvoiced_completed_appointments
 
-# Audit logging of these actions will be added in these services (audit app).
+# Each public function records one audit entry as its last step (same transaction).
 # Any change to an invoice's status or money locks the invoice row first
 # (select_for_update), so two cashiers can't both take the last payment.
 
@@ -95,7 +96,16 @@ def post_charge(
         existing = _live_charge_for(source_type, source_id) if source_type else None
         if existing is None:
             raise
-        return existing  # another request created it a moment ago
+        return existing  # another request created it a moment ago (nothing new to log)
+    # Only a NEW charge is logged; returning an existing one above writes nothing.
+    log_action(
+        actor=acting_user,
+        action=Action.CREATE,
+        event="billing.charge.posted",
+        obj=charge,
+        patient=patient,
+        message=f"{charge.description}: Rs. {charge.amount:,.2f}",
+    )
     return charge
 
 
@@ -146,6 +156,15 @@ def add_manual_charge(
     if invoice is not None:
         charge.invoice = invoice
         charge.save(update_fields=["invoice"])
+        # post_charge logged the charge; this entry records adding it to the draft.
+        log_action(
+            actor=acting_user,
+            action=Action.UPDATE,
+            event="billing.invoice.charge_added",
+            obj=invoice,
+            patient=patient,
+            message=f"Added {charge.description} (Rs. {charge.amount:,.2f})",
+        )
     return charge
 
 
@@ -165,6 +184,15 @@ def void_charge(charge, *, reason, acting_user, now=None):
     charge.voided_by = acting_user
     charge.void_reason = reason
     charge.save()
+    log_action(
+        actor=acting_user,
+        action=Action.STATUS_CHANGE,
+        event="billing.charge.voided",
+        obj=charge,
+        patient=charge.patient,
+        changes={"is_voided": [False, True]},
+        message=f"Voided: {reason}",
+    )
     return charge
 
 
@@ -195,6 +223,14 @@ def create_invoice(*, patient, charge_ids, acting_user):
     invoice.full_clean()
     invoice.save()
     Charge.objects.filter(pk__in=wanted).update(invoice=invoice)
+    log_action(
+        actor=acting_user,
+        action=Action.CREATE,
+        event="billing.invoice.created",
+        obj=invoice,
+        patient=patient,
+        message=f"Draft with {len(wanted)} charge(s), subtotal Rs. {invoice.subtotal:,.2f}",
+    )
     return invoice
 
 
@@ -205,6 +241,14 @@ def remove_charge_from_invoice(invoice, charge, *, acting_user):
     if charge.invoice_id != invoice.pk:
         raise ValidationError("That charge isn't on this invoice.")
     Charge.objects.filter(pk=charge.pk).update(invoice=None)
+    log_action(
+        actor=acting_user,
+        action=Action.UPDATE,
+        event="billing.invoice.charge_removed",
+        obj=invoice,
+        patient=invoice.patient,
+        message=f"Removed {charge.description} (Rs. {charge.amount:,.2f})",
+    )
 
 
 @transaction.atomic
@@ -219,10 +263,20 @@ def set_discount(invoice, *, amount, reason, acting_user):
         raise ValidationError("The discount can't be more than the subtotal.")
     if amount > 0 and not reason:
         raise ValidationError("Give a reason for the discount.")
+    old_discount = invoice.discount
     invoice.discount = amount
     invoice.discount_reason = reason[:255] if amount > 0 else ""
     invoice.full_clean()
     invoice.save()
+    log_action(
+        actor=acting_user,
+        action=Action.UPDATE,
+        event="billing.invoice.discount_set",
+        obj=invoice,
+        patient=invoice.patient,
+        changes={"discount": [old_discount, amount]},
+        message=invoice.discount_reason,
+    )
     return invoice
 
 
@@ -239,6 +293,15 @@ def issue_invoice(invoice, *, acting_user, now=None):
     invoice.issued_by = acting_user
     _recalculate_status(invoice)  # a fully discounted (Rs. 0) invoice is PAID straight away
     invoice.save()
+    log_action(
+        actor=acting_user,
+        action=Action.STATUS_CHANGE,
+        event="billing.invoice.issued",
+        obj=invoice,
+        patient=invoice.patient,
+        changes={"status": [InvoiceStatus.DRAFT, invoice.status]},
+        message=f"Issued for Rs. {invoice.total:,.2f}",
+    )
     return invoice
 
 
@@ -252,11 +315,21 @@ def void_invoice(invoice, *, reason, acting_user, now=None):
         raise ValidationError("This invoice has payments. Void the payments first.")
     # The charges go back to "unbilled" so they can be invoiced again correctly.
     invoice.charges.update(invoice=None)
+    old_status = invoice.status
     invoice.status = InvoiceStatus.VOID
     invoice.voided_at = now or timezone.now()
     invoice.voided_by = acting_user
     invoice.void_reason = reason
     invoice.save()
+    log_action(
+        actor=acting_user,
+        action=Action.STATUS_CHANGE,
+        event="billing.invoice.voided",
+        obj=invoice,
+        patient=invoice.patient,
+        changes={"status": [old_status, InvoiceStatus.VOID]},
+        message=f"Voided: {reason}",
+    )
     return invoice
 
 
@@ -290,8 +363,18 @@ def record_payment(*, invoice, amount, method, reference, acting_user, now=None)
     )
     payment.full_clean()
     payment.save()
+    old_status = invoice.status
     _recalculate_status(invoice)
     invoice.save()
+    log_action(
+        actor=acting_user,
+        action=Action.CREATE,
+        event="billing.payment.recorded",
+        obj=payment,
+        patient=invoice.patient,
+        changes={"invoice_status": [old_status, invoice.status]},
+        message=f"Paid Rs. {amount:,.2f} by {payment.get_method_display()} on {invoice.number}",
+    )
     return payment
 
 
@@ -307,8 +390,18 @@ def void_payment(payment, *, reason, acting_user, now=None):
     payment.voided_by = acting_user
     payment.void_reason = reason
     payment.save()
+    old_status = invoice.status
     _recalculate_status(invoice)
     invoice.save()
+    log_action(
+        actor=acting_user,
+        action=Action.STATUS_CHANGE,
+        event="billing.payment.voided",
+        obj=payment,
+        patient=invoice.patient,
+        changes={"is_voided": [False, True], "invoice_status": [old_status, invoice.status]},
+        message=f"Voided Rs. {payment.amount:,.2f}: {reason}",
+    )
     return payment
 
 
