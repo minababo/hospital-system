@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "admissions",
     "staff",
     "audit",
+    "demo",  # manage.py seed_demo; last, and nothing imports it
 ]
 
 MIDDLEWARE = [

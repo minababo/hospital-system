@@ -175,3 +175,16 @@ def test_other_apps_use_only_audit_services():
     ]
 
     assert offenders == []
+
+
+# demo (manage.py seed_demo) may import any app to build its data; nothing imports demo.
+def test_no_app_imports_demo():
+    pattern = re.compile(r"^\s*(from|import)\s+demo\b", re.MULTILINE)
+    offenders = [
+        str(path.relative_to(ROOT))
+        for path in ROOT.glob("*/**/*.py")
+        if path.relative_to(ROOT).parts[0] not in ("demo", ".venv")
+        and pattern.search(path.read_text(encoding="utf-8"))
+    ]
+
+    assert offenders == []
