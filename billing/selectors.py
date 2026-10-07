@@ -98,7 +98,7 @@ def invoice_list(*, status=None, q=None, date_from=None, date_to=None, outstandi
 def get_invoice(pk):
     return get_object_or_404(
         Invoice.objects.select_related(
-            "patient", "issued_by", "voided_by", "created_by"
+            "patient", "issued_by", "voided_by", "created_by", "discount_set_by"
         ).prefetch_related(
             Prefetch("charges", queryset=Charge.objects.order_by("created_at", "pk")),
             Prefetch(

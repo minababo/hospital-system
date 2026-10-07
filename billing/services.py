@@ -2,9 +2,10 @@ from decimal import Decimal, InvalidOperation
 
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
+from django.db.models import Q
 from django.utils import timezone
 
-from audit.services import Action, log_action
+from audit.services import Action, log_action, snapshot, updated_changes
 from billing.models import (
     CENT,
     Charge,
@@ -15,6 +16,7 @@ from billing.models import (
     PaymentMethod,
 )
 from billing.selectors import uninvoiced_completed_appointments
+from common.dates import local_day_bounds
 
 # Each public function records one audit entry as its last step (same transaction).
 # Any change to an invoice's status or money locks the invoice row first
@@ -60,6 +62,7 @@ def post_charge(
     source_type="",
     source_id=None,
     acting_user,
+    audit_note="",
 ):
     """Record a billable item for a patient. This is the only way other modules bill.
 
@@ -104,7 +107,7 @@ def post_charge(
         event="billing.charge.posted",
         obj=charge,
         patient=patient,
-        message=f"{charge.description}: Rs. {charge.amount:,.2f}",
+        message=f"{charge.description}: Rs. {charge.amount:,.2f}{audit_note}",
     )
     return charge
 
@@ -136,15 +139,87 @@ def capture_consultation_charges(*, patient, acting_user):
     return charges
 
 
+def normalise_description(text):
+    """Compare descriptions ignoring case and extra spaces: " X-ray  chest" = "x-ray chest"."""
+    return " ".join((text or "").split()).casefold()
+
+
+def find_possible_duplicates(
+    *, patient, charge_type, description, unit_price, now=None, exclude=None
+):
+    """Live manual charges that look the same as a new one: same patient, type,
+    description (ignoring case and spacing) and unit price, and still open to correction
+    (unbilled or on a draft) or entered today. An older charge on an issued invoice is
+    usually a real repeat (e.g. a second dressing next week), so it doesn't count."""
+    today_start, today_end = local_day_bounds(timezone.localdate(now or timezone.now()))
+    candidates = (
+        Charge.objects.filter(
+            patient=patient,
+            charge_type=charge_type,
+            unit_price=money(unit_price),
+            is_voided=False,
+            source_id__isnull=True,
+        )
+        .filter(
+            Q(invoice__isnull=True)
+            | Q(invoice__status=InvoiceStatus.DRAFT)
+            | Q(created_at__gte=today_start, created_at__lt=today_end)
+        )
+        .select_related("invoice")
+    )
+    if exclude is not None:
+        candidates = candidates.exclude(pk=exclude.pk)
+    # Descriptions are compared in Python: simple and exact, and a patient has few
+    # manual charges at this price, so the list is short.
+    wanted = normalise_description(description)
+    ids = [c.pk for c in candidates if normalise_description(c.description) == wanted]
+    return candidates.filter(pk__in=ids).order_by("created_at", "pk")
+
+
+def _describe_match(charge):
+    created = timezone.localtime(charge.created_at)
+    where = charge.invoice.number if charge.invoice_id else "unbilled"
+    return (
+        f"{charge.description} × {charge.quantity}, Rs. {charge.amount:,.2f}, "
+        f"added {created:%d %b %Y %H:%M} ({where})"
+    )
+
+
 @transaction.atomic
 def add_manual_charge(
-    *, patient, charge_type, description, quantity, unit_price, acting_user, invoice=None
+    *,
+    patient,
+    charge_type,
+    description,
+    quantity,
+    unit_price,
+    acting_user,
+    invoice=None,
+    confirm_duplicate=False,
+    now=None,
 ):
     if invoice is not None:
         invoice = _lock_invoice(invoice)
         _require_draft(invoice)
         if invoice.patient_id != patient.pk:
             raise ValidationError("The invoice belongs to another patient.")
+    matches = list(
+        find_possible_duplicates(
+            patient=patient,
+            charge_type=charge_type,
+            description=description,
+            unit_price=unit_price,
+            now=now,
+        )
+    )
+    if matches and not confirm_duplicate:
+        # The code lets the view show the "Add anyway" checkbox.
+        listed = "; ".join(_describe_match(match) for match in matches)
+        raise ValidationError(
+            f"This looks like a charge that is already there: {listed}. "
+            'Tick "Add anyway" if it is a separate charge.',
+            code="possible_duplicate",
+        )
     charge = post_charge(
         patient=patient,
         charge_type=charge_type,
@@ -152,6 +227,7 @@ def add_manual_charge(
         quantity=quantity,
         unit_price=unit_price,
         acting_user=acting_user,
+        audit_note=" (added despite possible duplicate)" if matches else "",
     )
     if invoice is not None:
         charge.invoice = invoice
@@ -168,17 +244,50 @@ def add_manual_charge(
     return charge
 
 
+CHARGE_ALREADY_VOIDED = "This charge is already voided."
+CHARGE_ON_ISSUED_INVOICE = "This charge is on an issued invoice. Void the invoice first."
+SYSTEM_CHARGE_NOT_EDITABLE = (
+    "System charges can't be edited — void the charge or apply a discount instead."
+)
+
+
+def void_blocked_reason(charge):
+    """Why this charge can't be voided, or None. Used by the void page and void_charge."""
+    if charge.is_voided:
+        return CHARGE_ALREADY_VOIDED
+    if charge.invoice_id and charge.invoice.status != InvoiceStatus.DRAFT:
+        return CHARGE_ON_ISSUED_INVOICE
+    return None
+
+
+def edit_blocked_reason(charge):
+    """Why this charge can't be edited, or None (the same rules as Charge.is_editable)."""
+    if not charge.is_manual:
+        return SYSTEM_CHARGE_NOT_EDITABLE
+    if charge.is_voided:
+        return "Voided charges can't be edited."
+    if charge.invoice_id and charge.invoice.status != InvoiceStatus.DRAFT:
+        return "This charge is on an issued invoice and can't be edited. Void the invoice first."
+    return None
+
+
+def _lock_charge_and_invoice(charge):
+    """Lock the charge, then its invoice (if any), and return the fresh charge."""
+    charge = Charge.objects.select_for_update().get(pk=charge.pk)
+    if charge.invoice_id:
+        # Attach the locked invoice so the checks below see its current status.
+        charge.invoice = _lock_invoice(charge.invoice)
+    return charge
+
+
 @transaction.atomic
 def void_charge(charge, *, reason, acting_user, now=None):
     reason = _require_reason(reason)
-    charge = Charge.objects.select_for_update().get(pk=charge.pk)
-    if charge.is_voided:
-        raise ValidationError("This charge is already voided.")
-    if charge.invoice_id:
-        invoice = _lock_invoice(charge.invoice)
-        if invoice.status != InvoiceStatus.DRAFT:
-            raise ValidationError("This charge is on an issued invoice. Void the invoice first.")
-        charge.invoice = None
+    charge = _lock_charge_and_invoice(charge)
+    blocked = void_blocked_reason(charge)
+    if blocked:
+        raise ValidationError(blocked)
+    charge.invoice = None
     charge.is_voided = True
     charge.voided_at = now or timezone.now()
     charge.voided_by = acting_user
@@ -192,6 +301,48 @@ def void_charge(charge, *, reason, acting_user, now=None):
         patient=charge.patient,
         changes={"is_voided": [False, True]},
         message=f"Voided: {reason}",
+    )
+    return charge
+
+
+EDITABLE_CHARGE_FIELDS = ["description", "charge_type", "quantity", "unit_price", "amount"]
+
+
+@transaction.atomic
+def edit_charge(charge, *, description, charge_type, quantity, unit_price, reason, acting_user):
+    """Correct a manual charge (wrong price, quantity, description or type) while it is
+    unbilled or on a draft invoice. System charges are never edited: they mirror a
+    consultation, lab test, dispense or bed stay, so the fix is to void or discount."""
+    reason = (reason or "").strip()
+    if not reason:
+        raise ValidationError({"reason": ["Give a reason for the correction."]})
+    charge = _lock_charge_and_invoice(charge)
+    blocked = edit_blocked_reason(charge)
+    if blocked:
+        raise ValidationError(blocked)
+    if charge_type == ChargeType.CONSULTATION:
+        raise ValidationError(
+            {"charge_type": ["Consultation charges come from completed appointments."]}
+        )
+
+    before = snapshot(charge, EDITABLE_CHARGE_FIELDS)
+    charge.description = (description or "").strip()
+    charge.charge_type = charge_type
+    charge.quantity = quantity
+    charge.unit_price = money(unit_price)
+    charge.full_clean()  # validates the fields and recomputes amount
+    changes = updated_changes(charge, before, EDITABLE_CHARGE_FIELDS)
+    if not changes:
+        raise ValidationError("Nothing to change: the charge already has these values.")
+    charge.save()
+    log_action(
+        actor=acting_user,
+        action=Action.UPDATE,
+        event="billing.charge.edited",
+        obj=charge,
+        patient=charge.patient,
+        changes=changes,
+        message=f"Correction: {reason[:200]}",
     )
     return charge
 
@@ -252,7 +403,7 @@ def remove_charge_from_invoice(invoice, charge, *, acting_user):
 
 
 @transaction.atomic
-def set_discount(invoice, *, amount, reason, acting_user):
+def set_discount(invoice, *, amount, reason, acting_user, now=None):
     invoice = _lock_invoice(invoice)
     _require_draft(invoice)
     amount = money(amount)
@@ -266,6 +417,9 @@ def set_discount(invoice, *, amount, reason, acting_user):
     old_discount = invoice.discount
     invoice.discount = amount
     invoice.discount_reason = reason[:255] if amount > 0 else ""
+    # Accountability on the invoice itself (the audit log keeps the full history).
+    invoice.discount_set_by = acting_user if amount > 0 else None
+    invoice.discount_set_at = (now or timezone.now()) if amount > 0 else None
     invoice.full_clean()
     invoice.save()
     log_action(

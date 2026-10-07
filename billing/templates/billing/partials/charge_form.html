@@ -1,0 +1,21 @@
+{% load money %}
+{% comment %}
+  The manual "Add a charge" fields. Expects: charge_form, duplicates (charges the service
+  thought this one repeats, or None). The "Add anyway" checkbox only appears after that warning.
+{% endcomment %}
+{% if duplicates is not None %}
+  <div class="mb-4 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+    <p class="font-medium">Possible duplicate. This patient already has:</p>
+    <ul class="mt-2 list-disc pl-5">
+      {% for match in duplicates %}
+        <li>{{ match.description }} × {{ match.quantity }}, {{ match.amount|rupees }}, added {{ match.created_at|date:"d M Y H:i" }} ({% if match.invoice_id %}{{ match.invoice.number }}{% else %}unbilled{% endif %})</li>
+      {% endfor %}
+    </ul>
+    <label class="mt-3 flex items-center gap-2 font-medium">{{ charge_form.confirm_duplicate }} {{ charge_form.confirm_duplicate.label }}</label>
+  </div>
+{% endif %}
+<div class="grid gap-3 {{ grid_class|default:'sm:grid-cols-4' }}">
+  {% for field in charge_form %}
+    {% if field.name != "confirm_duplicate" %}{% include "partials/form_field.html" %}{% endif %}
+  {% endfor %}
+</div>

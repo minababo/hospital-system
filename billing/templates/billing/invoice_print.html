@@ -17,7 +17,7 @@
       <tr><td>{{ charge.description }}</td><td class="num">{{ charge.quantity }}</td><td class="num">{{ charge.unit_price|rupees }}</td><td class="num">{{ charge.amount|rupees }}</td></tr>
     {% endfor %}
     <tr><td colspan="3" class="num">Subtotal</td><td class="num">{{ invoice.subtotal|rupees }}</td></tr>
-    {% if invoice.discount %}<tr><td colspan="3" class="num">Discount ({{ invoice.discount_reason }})</td><td class="num">&minus; {{ invoice.discount|rupees }}</td></tr>{% endif %}
+    {% if invoice.discount %}<tr><td colspan="3" class="num">{% include "billing/partials/discount_line.html" %}</td><td class="num">&minus; {{ invoice.discount|rupees }}</td></tr>{% endif %}
     <tr><th colspan="3" class="num">Total</th><th class="num">{{ invoice.total|rupees }}</th></tr>
     <tr><td colspan="3" class="num">Paid</td><td class="num">{{ invoice.amount_paid|rupees }}</td></tr>
     <tr><th colspan="3" class="num">Balance due</th><th class="num">{{ invoice.balance|rupees }}</th></tr>
