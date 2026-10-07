@@ -5,6 +5,14 @@ from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 from accounts.models import Role
+from audit.services import (
+    Action,
+    created_changes,
+    log_action,
+    saved_snapshot,
+    snapshot,
+    updated_changes,
+)
 from staff.models import (
     Attendance,
     Employee,
@@ -18,7 +26,8 @@ from staff.selectors import (
     overlapping_leave,
 )
 
-# Audit logging of these actions will be added in these services (audit app).
+# Each public write records one audit entry as its last step (same transaction);
+# the attendance sheet records one entry per changed row.
 #
 # One source of truth per day: a day is either covered by approved leave or has an
 # attendance record, never both. The sheet refuses employees on approved leave, and
@@ -60,16 +69,31 @@ def create_employee(*, acting_user, **fields):
     employee = Employee(**fields)
     employee.full_clean(validate_unique=False)  # the login link is checked above
     _save_or_raise(employee, {"user": ["This login was just linked to another employee."]})
+    log_action(
+        actor=acting_user,
+        action=Action.CREATE,
+        event="staff.employee.created",
+        obj=employee,
+        changes=created_changes(employee),
+    )
     return employee
 
 
 @transaction.atomic
 def update_employee(employee, *, acting_user, **fields):
     _check_user_link(fields.get("user"), employee)
+    before = saved_snapshot(employee)
     for name, value in fields.items():
         setattr(employee, name, value)
     employee.full_clean(validate_unique=False)
     _save_or_raise(employee, {"user": ["This login was just linked to another employee."]})
+    log_action(
+        actor=acting_user,
+        action=Action.UPDATE,
+        event="staff.employee.updated",
+        obj=employee,
+        changes=updated_changes(employee, before),
+    )
     return employee
 
 
@@ -94,12 +118,24 @@ def end_employment(employee, *, status, end_date, acting_user, now=None):
             {"end_date": [f"Attendance is recorded after this date ({later.date:%d %b %Y})."]}
         )
 
+    old_status = employee.status
     employee.status = status
     employee.end_date = end_date
     employee.full_clean(validate_unique=False)
     employee.save()
-    employee.leave_requests.filter(status=LeaveStatus.PENDING).update(
+    cancelled = employee.leave_requests.filter(status=LeaveStatus.PENDING).update(
         status=LeaveStatus.CANCELLED, cancelled_at=now
+    )
+    message = f"Last day {end_date:%Y-%m-%d}"
+    if cancelled:
+        message += f"; {cancelled} pending leave request(s) cancelled"
+    log_action(
+        actor=acting_user,
+        action=Action.STATUS_CHANGE,
+        event="staff.employee.employment_ended",
+        obj=employee,
+        changes={"status": [old_status, status], "end_date": [None, end_date]},
+        message=message,
     )
     return employee
 
@@ -131,6 +167,8 @@ def save_attendance_sheet(*, date, rows, acting_user, now=None):
         a.employee_id: a
         for a in Attendance.objects.select_for_update().filter(date=date, employee__in=working)
     }
+    sheet_fields = ["status", "check_in", "check_out", "notes"]
+    before = {pk: snapshot(a, sheet_fields) for pk, a in existing.items()}
 
     errors = []
     to_save = []
@@ -158,7 +196,21 @@ def save_attendance_sheet(*, date, rows, acting_user, now=None):
     if errors:
         raise ValidationError(errors)
     for record in to_save:
+        is_new = record.pk is None
+        if not is_new:
+            changes = updated_changes(record, before[record.employee_id], sheet_fields)
+            if not changes:
+                continue  # an unchanged row is neither saved again nor logged
         _save_or_raise(record, "Someone saved this sheet at the same time. Reload and try again.")
+        # One entry per row that was created or changed.
+        log_action(
+            actor=acting_user,
+            action=Action.CREATE if is_new else Action.UPDATE,
+            event="staff.attendance.recorded" if is_new else "staff.attendance.updated",
+            obj=record,
+            changes=created_changes(record, sheet_fields) if is_new else changes,
+            message=f"{record.employee.full_name}: {record.get_status_display()}",
+        )
     return to_save
 
 
@@ -256,6 +308,7 @@ def record_leave(
     )
     leave.full_clean()
     leave.save()
+    _log_leave(leave, Action.CREATE, "staff.leave.recorded", acting_user=acting_user)
     return leave
 
 
@@ -282,11 +335,26 @@ def request_leave(*, user, leave_type, start_date, end_date, reason, now=None):
     )
     leave.full_clean()
     leave.save()
+    _log_leave(leave, Action.CREATE, "staff.leave.requested", acting_user=user)
     return leave
 
 
 def _lock_leave(leave):
     return LeaveRequest.objects.select_for_update().get(pk=leave.pk)
+
+
+def _log_leave(leave, action, event, *, acting_user, old_status=None, message=""):
+    dates = (
+        f"{leave.get_leave_type_display()} {leave.start_date:%Y-%m-%d} to {leave.end_date:%Y-%m-%d}"
+    )
+    log_action(
+        actor=acting_user,
+        action=action,
+        event=event,
+        obj=leave,
+        changes={"status": [old_status, leave.status]},
+        message=f"{leave.employee.full_name}: {dates}" + (f" ({message})" if message else ""),
+    )
 
 
 @transaction.atomic
@@ -306,6 +374,14 @@ def approve_leave(leave, *, note="", confirm_doctor_conflicts=False, acting_user
     leave.decided_at = now or timezone.now()
     leave.decision_note = (note or "").strip()[:255]
     leave.save()
+    _log_leave(
+        leave,
+        Action.STATUS_CHANGE,
+        "staff.leave.approved",
+        acting_user=acting_user,
+        old_status=LeaveStatus.PENDING,
+        message=leave.decision_note,
+    )
     return leave
 
 
@@ -322,6 +398,14 @@ def reject_leave(leave, *, note, acting_user, now=None):
     leave.decided_at = now or timezone.now()
     leave.decision_note = note[:255]
     leave.save()
+    _log_leave(
+        leave,
+        Action.STATUS_CHANGE,
+        "staff.leave.rejected",
+        acting_user=acting_user,
+        old_status=LeaveStatus.PENDING,
+        message=leave.decision_note,
+    )
     return leave
 
 
@@ -338,7 +422,15 @@ def cancel_leave(leave, *, acting_user, now=None):
         raise ValidationError("Only pending or approved leave can be cancelled.")
     if _today(now) >= leave.start_date:
         raise ValidationError("Leave can only be cancelled before it starts.")
+    old_status = leave.status
     leave.status = LeaveStatus.CANCELLED
     leave.cancelled_at = now
     leave.save()
+    _log_leave(
+        leave,
+        Action.STATUS_CHANGE,
+        "staff.leave.cancelled",
+        acting_user=acting_user,
+        old_status=old_status,
+    )
     return leave

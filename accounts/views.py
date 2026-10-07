@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth import views as auth_views
 from django.core.exceptions import ValidationError
+from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.utils.functional import cached_property
@@ -12,6 +13,7 @@ from accounts import selectors, services
 from accounts.forms import AdminSetPasswordForm, UserCreateForm, UserFilterForm, UserUpdateForm
 from accounts.models import Role, User
 from accounts.permissions import ALL_ROLES, RoleRequiredMixin
+from audit.services import Action, log_action
 
 
 class PasswordChangeView(RoleRequiredMixin, auth_views.PasswordChangeView):
@@ -20,8 +22,17 @@ class PasswordChangeView(RoleRequiredMixin, auth_views.PasswordChangeView):
     success_url = reverse_lazy("dashboard")
 
     def form_valid(self, form):
-        # The parent view saves the password and keeps the user logged in.
-        response = super().form_valid(form)
+        # The parent view saves the password and keeps the user logged in. The audit
+        # entry is written in the same transaction, and never contains the password.
+        with transaction.atomic():
+            response = super().form_valid(form)
+            log_action(
+                actor=self.request.user,
+                action=Action.UPDATE,
+                event="accounts.password.changed",
+                obj=self.request.user,
+                message="Changed their own password",
+            )
         messages.success(self.request, "Your password has been changed.")
         return response
 

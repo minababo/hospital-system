@@ -1,0 +1,67 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}Audit log{% endblock %}
+
+{% block content %}
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-2xl font-semibold text-slate-900">Audit log</h1>
+    <a href="{% querystring export='csv' page=None %}" class="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">Export CSV</a>
+  </div>
+  <p class="mt-1 text-sm text-slate-500">Every change, status change, login and file view. Entries can't be edited or deleted. CSV export holds at most {{ csv_max_rows }} rows, newest first.</p>
+
+  {% include "partials/form_errors.html" with form=filter_form %}
+  <form method="get" class="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    {% for field in filter_form.visible_fields %}
+      <label class="block text-sm">
+        <span class="text-slate-600">{{ field.label }}</span>
+        {{ field }}
+        {% for error in field.errors %}<span class="mt-1 block text-xs text-red-600">{{ error }}</span>{% endfor %}
+      </label>
+    {% endfor %}
+    {% for field in filter_form.hidden_fields %}{{ field }}{% endfor %}
+    <div class="flex gap-2 sm:col-span-2 lg:col-span-4">
+      <button type="submit" class="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Filter</button>
+      <a href="{% url 'audit:log_list' %}" class="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">Clear</a>
+    </div>
+  </form>
+
+  <div class="mt-6 overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
+    <table class="min-w-full divide-y divide-slate-200 text-sm">
+      <thead class="bg-slate-50 text-left text-xs font-semibold tracking-wide text-slate-500 uppercase">
+        <tr>
+          <th class="px-4 py-3">Time</th>
+          <th class="px-4 py-3">Actor</th>
+          <th class="px-4 py-3">Action</th>
+          <th class="px-4 py-3">Event</th>
+          <th class="px-4 py-3">Object</th>
+          <th class="px-4 py-3">Patient</th>
+          <th class="px-4 py-3">Message</th>
+          <th class="px-4 py-3">IP</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for entry in entries %}
+          <tr class="align-top">
+            <td class="px-4 py-3 whitespace-nowrap">
+              <a href="{% url 'audit:log_detail' entry.pk %}" class="text-slate-900 hover:underline">{{ entry.created_at|date:"d M Y H:i:s" }}</a>
+            </td>
+            <td class="px-4 py-3">
+              {{ entry.actor_name|default:"Anonymous" }}
+              {% if entry.actor_role %}<span class="block text-xs text-slate-500">{{ entry.actor_role }}</span>{% endif %}
+            </td>
+            <td class="px-4 py-3">{% include "audit/partials/action_badge.html" %}</td>
+            <td class="px-4 py-3 font-mono text-xs">{{ entry.event }}</td>
+            <td class="px-4 py-3">{{ entry.object_repr|default:"—" }}</td>
+            <td class="px-4 py-3 whitespace-nowrap">{{ entry.patient.mrn|default:"—" }}</td>
+            <td class="px-4 py-3">{{ entry.message|default:"—" }}</td>
+            <td class="px-4 py-3 whitespace-nowrap">{{ entry.ip_address|default:"—" }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="8" class="px-4 py-6 text-center text-slate-500">No audit entries found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% include "partials/pagination.html" %}
+{% endblock %}

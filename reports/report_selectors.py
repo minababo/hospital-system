@@ -18,11 +18,11 @@ from appointments.models import Appointment
 from appointments.models import Status as AppointmentStatus
 from billing.models import ChargeType, Invoice, InvoiceStatus, Payment, PaymentMethod
 from billing.selectors import MONEY, OPEN_STATUSES, ZERO, invoiced_by_charge_type, with_totals
+from common.dates import local_range_bounds
 from laboratory.models import LabOrder, LabOrderItem, LabResult, OrderStatus
 from patients.models import Patient, years_between
 from pharmacy.models import DispenseItem, MovementType, StockBatch, StockMovement
 from pharmacy.selectors import pharmacy_alerts_summary
-from reports.dates import local_range_bounds
 from staff.models import LeaveType
 from staff.selectors import headcount, leave_taken_between, monthly_attendance_summary
 

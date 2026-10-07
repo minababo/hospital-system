@@ -7,6 +7,14 @@ from appointments import services as appointment_services
 from appointments.models import Appointment
 from appointments.models import Status as AppointmentStatus
 from appointments.selectors import local_now
+from audit.services import (
+    Action,
+    created_changes,
+    log_action,
+    saved_snapshot,
+    snapshot,
+    updated_changes,
+)
 from patients import services as patient_services
 from records.models import (
     Diagnosis,
@@ -21,7 +29,7 @@ from records.models import (
 )
 from records.selectors import allergy_matches, record_for_appointment
 
-# Audit logging of these actions will be added in these services (audit app).
+# Each public function records one audit entry as its last step (same transaction).
 # Status changes lock the row with select_for_update() so two requests can't change
 # the same record/prescription/appointment at the same time.
 
@@ -87,8 +95,17 @@ def start_consultation(*, appointment, acting_user, now=None):
         with transaction.atomic():
             record.save()
     except IntegrityError:
-        # Someone (e.g. a double click) created it a moment ago: use that one.
+        # Someone (e.g. a double click) created it a moment ago: use that one (no entry,
+        # nothing new was written).
         return MedicalRecord.objects.get(appointment=appointment)
+    log_action(
+        actor=acting_user,
+        action=Action.CREATE,
+        event="records.record.started",
+        obj=record,
+        patient=record.patient,
+        message="Consultation started",
+    )
     return record
 
 
@@ -99,10 +116,20 @@ def update_record(record, *, data, acting_user):
     unknown = set(data) - RECORD_FIELDS
     if unknown:
         raise ValueError(f"Cannot update fields: {', '.join(sorted(unknown))}")
+    fields = sorted(RECORD_FIELDS)
+    before = saved_snapshot(record, fields)
     for name, value in data.items():
         setattr(record, name, value)
     record.full_clean()
     record.save()
+    log_action(
+        actor=acting_user,
+        action=Action.UPDATE,
+        event="records.record.updated",
+        obj=record,
+        patient=record.patient,
+        changes=updated_changes(record, before, fields),
+    )
     return record
 
 
@@ -113,6 +140,14 @@ def add_diagnosis(record, *, data, acting_user):
     diagnosis = Diagnosis(record=record, **data)
     diagnosis.full_clean()  # also checks the "one primary diagnosis" constraint
     _save_or_raise(diagnosis, "This consultation already has a primary diagnosis.")
+    log_action(
+        actor=acting_user,
+        action=Action.CREATE,
+        event="records.diagnosis.added",
+        obj=diagnosis,
+        patient=record.patient,
+        changes=created_changes(diagnosis, ["description", "icd10_code", "diagnosis_type"]),
+    )
     return diagnosis
 
 
@@ -120,7 +155,17 @@ def add_diagnosis(record, *, data, acting_user):
 def remove_diagnosis(diagnosis, *, acting_user):
     _ensure_own_doctor(diagnosis.record, acting_user)
     _ensure_draft(diagnosis.record)
+    pk, description = diagnosis.pk, str(diagnosis)
     diagnosis.delete()
+    diagnosis.pk = pk  # delete() cleared it; the audit entry still names the row
+    log_action(
+        actor=acting_user,
+        action=Action.DELETE,
+        event="records.diagnosis.removed",
+        obj=diagnosis,
+        patient=diagnosis.record.patient,
+        message=f"Removed diagnosis {description}",
+    )
 
 
 @transaction.atomic
@@ -146,6 +191,17 @@ def add_prescription_item(record, *, data, allergy_override, acting_user):
     item = PrescriptionItem(prescription=prescription, allergy_override=bool(matches), **data)
     item.full_clean()
     _save_or_raise(item, "This medicine is already on the prescription.")
+    log_action(
+        actor=acting_user,
+        action=Action.CREATE,
+        event="records.prescription_item.added",
+        obj=item,
+        patient=record.patient,
+        changes=created_changes(
+            item, ["medicine", "dose", "frequency", "duration_days", "quantity", "allergy_override"]
+        ),
+        message="Prescribed despite allergy note" if item.allergy_override else "",
+    )
     return item
 
 
@@ -154,7 +210,17 @@ def remove_prescription_item(item, *, acting_user):
     record = item.prescription.record
     _ensure_own_doctor(record, acting_user)
     _ensure_draft(record)
+    pk, description = item.pk, str(item.medicine)
     item.delete()
+    item.pk = pk  # delete() cleared it; the audit entry still names the row
+    log_action(
+        actor=acting_user,
+        action=Action.DELETE,
+        event="records.prescription_item.removed",
+        obj=item,
+        patient=record.patient,
+        message=f"Removed {description}",
+    )
 
 
 @transaction.atomic
@@ -168,8 +234,17 @@ def attach_report(record, *, file, category, description, acting_user):
         category=category,
         description=description,
         acting_user=acting_user,
+    )  # upload_document records the file upload itself
+    report = RecordReport.objects.create(record=record, document=document)
+    log_action(
+        actor=acting_user,
+        action=Action.CREATE,
+        event="records.report.attached",
+        obj=report,
+        patient=record.patient,
+        message=f"Attached {document.original_name} to the consultation",
     )
-    return RecordReport.objects.create(record=record, document=document)
+    return report
 
 
 @transaction.atomic
@@ -193,12 +268,29 @@ def finalize_record(record, *, acting_user, now=None):
             prescription.status = PrescriptionStatus.ISSUED
             prescription.issued_at = now
             prescription.save()
+            # The prescription is a separate object, so it gets its own entry.
+            log_action(
+                actor=acting_user,
+                action=Action.STATUS_CHANGE,
+                event="records.prescription.issued",
+                obj=prescription,
+                patient=record.patient,
+                changes={"status": [PrescriptionStatus.DRAFT, PrescriptionStatus.ISSUED]},
+            )
         else:
             prescription.delete()  # no medicines were added; don't keep an empty draft
 
     record.status = RecordStatus.FINALIZED
     record.finalized_at = now
     record.save()
+    log_action(
+        actor=acting_user,
+        action=Action.STATUS_CHANGE,
+        event="records.record.finalized",
+        obj=record,
+        patient=record.patient,
+        changes={"status": [RecordStatus.DRAFT, RecordStatus.FINALIZED]},
+    )
 
     appointment = Appointment.objects.select_for_update().get(pk=record.appointment_id)
     if appointment.status == AppointmentStatus.CHECKED_IN:
@@ -214,7 +306,16 @@ def add_addendum(record, *, text, acting_user):
     text = (text or "").strip()
     if not text:
         raise ValidationError({"text": ["Please write the addendum."]})
-    return RecordAddendum.objects.create(record=record, text=text, author=acting_user)
+    addendum = RecordAddendum.objects.create(record=record, text=text, author=acting_user)
+    log_action(
+        actor=acting_user,
+        action=Action.CREATE,
+        event="records.addendum.added",
+        obj=addendum,
+        patient=record.patient,
+        changes=created_changes(addendum, ["text"]),
+    )
+    return addendum
 
 
 @transaction.atomic
@@ -236,6 +337,15 @@ def cancel_prescription(prescription, *, reason, acting_user, now=None):
     prescription.cancelled_by = acting_user
     prescription.cancel_reason = reason[:255]
     prescription.save()
+    log_action(
+        actor=acting_user,
+        action=Action.STATUS_CHANGE,
+        event="records.prescription.cancelled",
+        obj=prescription,
+        patient=prescription.patient,
+        changes={"status": [PrescriptionStatus.ISSUED, PrescriptionStatus.CANCELLED]},
+        message=f"Cancelled: {prescription.cancel_reason}",
+    )
     return prescription
 
 
@@ -252,10 +362,19 @@ def update_dispensing_status(prescription, *, fully_dispensed, acting_user, now=
         raise ValidationError(
             f"A {prescription.get_status_display().lower()} prescription can't be dispensed."
         )
+    old_status = prescription.status
     prescription.status = (
         PrescriptionStatus.DISPENSED if fully_dispensed else PrescriptionStatus.PARTIALLY_DISPENSED
     )
     prescription.save(update_fields=["status", "updated_at"])
+    log_action(
+        actor=acting_user,
+        action=Action.STATUS_CHANGE,
+        event="records.prescription.dispensing_updated",
+        obj=prescription,
+        patient=prescription.patient,
+        changes={"status": [old_status, prescription.status]},
+    )
     return prescription
 
 
@@ -290,10 +409,20 @@ def record_vitals(*, appointment, data, acting_user, now=None):
     vitals = Vitals.objects.filter(appointment=appointment).first() or Vitals(
         appointment=appointment, patient_id=appointment.patient_id
     )
+    is_new = vitals.pk is None
+    before = {} if is_new else snapshot(vitals, VITAL_FIELDS)
     for name in VITAL_FIELDS:
         setattr(vitals, name, data.get(name))
     vitals.recorded_by = acting_user
     vitals.recorded_at = now or timezone.now()
     vitals.full_clean()
     vitals.save()
+    log_action(
+        actor=acting_user,
+        action=Action.CREATE if is_new else Action.UPDATE,
+        event="records.vitals.recorded" if is_new else "records.vitals.updated",
+        obj=vitals,
+        patient=appointment.patient,
+        changes=updated_changes(vitals, before, VITAL_FIELDS),
+    )
     return vitals

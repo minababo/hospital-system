@@ -6,6 +6,7 @@ from django.utils import timezone
 
 from accounts.models import Role
 from appointments.models import Status as AppointmentStatus
+from audit.services import Action, created_changes, log_action, saved_snapshot, updated_changes
 from billing import services as billing_services
 from billing.models import Charge, ChargeType, InvoiceStatus
 from laboratory.models import (
@@ -17,13 +18,14 @@ from laboratory.models import (
     LabTestParameter,
     OrderStatus,
     compute_flag,
+    format_decimal,
 )
 from laboratory.selectors import missing_results, orderable_tests
 from patients import services as patient_services
 from patients.models import PatientDocument
 from records.models import MedicalRecord
 
-# Audit logging of these actions will be added in these services (audit app).
+# Each public function records one audit entry as its last step (same transaction).
 # Status changes lock the order row with select_for_update().
 
 CHARGE_SOURCE = "lab_order_item"
@@ -47,22 +49,45 @@ def create_lab_test(*, acting_user, **fields):
     test = LabTest(**fields)
     test.full_clean()
     test.save()
+    log_action(
+        actor=acting_user,
+        action=Action.CREATE,
+        event="laboratory.test.created",
+        obj=test,
+        changes=created_changes(test),
+    )
     return test
 
 
 @transaction.atomic
 def update_lab_test(test, *, acting_user, **fields):
+    before = saved_snapshot(test)
     for name, value in fields.items():
         setattr(test, name, value)
     test.full_clean()
     test.save()
+    log_action(
+        actor=acting_user,
+        action=Action.UPDATE,
+        event="laboratory.test.updated",
+        obj=test,
+        changes=updated_changes(test, before),
+    )
     return test
 
 
 @transaction.atomic
 def set_lab_test_active(test, active, *, acting_user):
+    was_active = LabTest.objects.values_list("is_active", flat=True).get(pk=test.pk)
     test.is_active = active
     test.save(update_fields=["is_active", "updated_at"])
+    log_action(
+        actor=acting_user,
+        action=Action.STATUS_CHANGE,
+        event="laboratory.test.activated" if active else "laboratory.test.deactivated",
+        obj=test,
+        changes={"is_active": [was_active, active]},
+    )
     return test
 
 
@@ -71,15 +96,30 @@ def add_parameter(test, *, acting_user, **fields):
     parameter = LabTestParameter(test=test, **fields)
     parameter.full_clean()
     parameter.save()
+    log_action(
+        actor=acting_user,
+        action=Action.CREATE,
+        event="laboratory.parameter.created",
+        obj=parameter,
+        changes=created_changes(parameter),
+    )
     return parameter
 
 
 @transaction.atomic
 def update_parameter(parameter, *, acting_user, **fields):
+    before = saved_snapshot(parameter)
     for name, value in fields.items():
         setattr(parameter, name, value)
     parameter.full_clean()
     parameter.save()
+    log_action(
+        actor=acting_user,
+        action=Action.UPDATE,
+        event="laboratory.parameter.updated",
+        obj=parameter,
+        changes=updated_changes(parameter, before),
+    )
     return parameter
 
 
@@ -91,7 +131,16 @@ def remove_parameter(parameter, *, acting_user):
             "This parameter has recorded results, so it can't be removed. "
             "Create a new version of the test instead and deactivate this one."
         )
+    pk, description = parameter.pk, str(parameter)
     parameter.delete()
+    parameter.pk = pk  # delete() cleared it; the audit entry still names the row
+    log_action(
+        actor=acting_user,
+        action=Action.DELETE,
+        event="laboratory.parameter.removed",
+        obj=parameter,
+        message=f"Removed {description}",
+    )
 
 
 # --- Ordering ----------------------------------------------------------------------
@@ -133,6 +182,16 @@ def _create_order(*, patient, tests, priority, clinical_notes, acting_user, **so
             source_id=item.pk,
             acting_user=acting_user,
         )
+    log_action(
+        actor=acting_user,
+        action=Action.CREATE,
+        event="laboratory.order.created",
+        obj=order,
+        patient=patient,
+        message=(
+            f"Requested {', '.join(test.code for test in tests)} ({order.get_priority_display()})"
+        ),
+    )
     return order
 
 
@@ -192,6 +251,15 @@ def collect_sample(order, *, notes, acting_user, now=None):
     order.sample_collected_by = acting_user
     order.sample_notes = (notes or "").strip()[:255]
     order.save()
+    log_action(
+        actor=acting_user,
+        action=Action.STATUS_CHANGE,
+        event="laboratory.order.sample_collected",
+        obj=order,
+        patient=order.patient,
+        changes={"status": [OrderStatus.REQUESTED, OrderStatus.SAMPLE_COLLECTED]},
+        message=order.sample_notes,
+    )
     return order
 
 
@@ -238,8 +306,17 @@ def save_results(order, *, item, values, comment, acting_user, now=None):
         raise ValidationError(errors)
 
     existing = {result.parameter_id: result for result in item.results.all()}
+    # {parameter name: [old, new]} for the audit entry.
+    changes = {}
     for parameter in parameters:
         value = parsed[parameter.pk]
+        old = existing[parameter.pk].display_value if parameter.pk in existing else None
+        if isinstance(value, Decimal):
+            new = format_decimal(value)  # same formatting as display_value: 14.0 -> "14"
+        else:
+            new = value or None
+        if old != new:
+            changes[parameter.name] = [old, new]
         if value in (None, ""):
             if parameter.pk in existing:
                 existing[parameter.pk].delete()
@@ -259,8 +336,19 @@ def save_results(order, *, item, values, comment, acting_user, now=None):
         result.full_clean()
         result.save()
 
+    old_comment = item.comment
     item.comment = (comment or "").strip()
     item.save(update_fields=["comment"])
+    if old_comment != item.comment:
+        changes["comment"] = [old_comment, item.comment]
+    log_action(
+        actor=acting_user,
+        action=Action.UPDATE,
+        event="laboratory.results.saved",
+        obj=item,
+        patient=order.patient,
+        changes=changes,
+    )
     return item
 
 
@@ -280,6 +368,14 @@ def release_results(order, *, acting_user, now=None):
     order.released_at = now or timezone.now()
     order.released_by = acting_user
     order.save()
+    log_action(
+        actor=acting_user,
+        action=Action.STATUS_CHANGE,
+        event="laboratory.order.released",
+        obj=order,
+        patient=order.patient,
+        changes={"status": [OrderStatus.SAMPLE_COLLECTED, OrderStatus.COMPLETED]},
+    )
     return order
 
 
@@ -329,11 +425,21 @@ def cancel_order(order, *, reason, acting_user, now=None):
             now=now,
         )
 
+    old_status = order.status
     order.status = OrderStatus.CANCELLED
     order.cancelled_at = now or timezone.now()
     order.cancelled_by = acting_user
     order.cancel_reason = reason[:255]
     order.save()
+    log_action(
+        actor=acting_user,
+        action=Action.STATUS_CHANGE,
+        event="laboratory.order.cancelled",
+        obj=order,
+        patient=order.patient,
+        changes={"status": [old_status, OrderStatus.CANCELLED]},
+        message=f"Cancelled: {order.cancel_reason}",
+    )
     return order
 
 
@@ -349,5 +455,14 @@ def attach_lab_report(order, *, file, description, acting_user):
         category=PatientDocument.Category.LAB_REPORT,
         description=description or order.number,
         acting_user=acting_user,
+    )  # upload_document records the file upload itself
+    report = LabOrderReport.objects.create(order=order, document=document)
+    log_action(
+        actor=acting_user,
+        action=Action.CREATE,
+        event="laboratory.report.attached",
+        obj=report,
+        patient=order.patient,
+        message=f"Attached {document.original_name} to {order.number}",
     )
-    return LabOrderReport.objects.create(order=order, document=document)
+    return report

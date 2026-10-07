@@ -31,6 +31,7 @@ NAV_ITEMS = {
         ("Staff", "staff:employee_list"),
         ("Attendance", "staff:attendance"),
         ("Leave", "staff:leave_list"),
+        ("Audit log", "audit:log_list"),
         ("Departments", "doctors:department_list"),
         ("Wards & beds", "admissions:ward_list"),
         DOCTORS,

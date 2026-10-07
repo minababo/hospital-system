@@ -9,9 +9,11 @@ from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
+from audit.services import Action, created_changes, log_action, saved_snapshot, updated_changes
 from pharmacy.models import Medicine, MovementType, StockBatch, StockMovement
 
-# Audit logging of these actions will be added in these services (audit app).
+# Each public write records one audit entry as its last step (same transaction).
+# allocate_and_issue is only called by dispensing, which logs the whole dispense.
 
 
 # --- Catalog ------------------------------------------------------------------------
@@ -22,22 +24,49 @@ def create_medicine(*, acting_user, **fields):
     medicine = Medicine(**fields)
     medicine.full_clean()
     medicine.save()
+    log_action(
+        actor=acting_user,
+        action=Action.CREATE,
+        event="pharmacy.medicine.created",
+        obj=medicine,
+        changes=created_changes(medicine),
+    )
     return medicine
 
 
 @transaction.atomic
 def update_medicine(medicine, *, acting_user, **fields):
+    before = saved_snapshot(medicine)
     for name, value in fields.items():
         setattr(medicine, name, value)
     medicine.full_clean()
     medicine.save()
+    changes = updated_changes(medicine, before)
+    log_action(
+        actor=acting_user,
+        action=Action.UPDATE,
+        # A price change gets its own event so it is easy to find in the log.
+        event="pharmacy.medicine.price_changed"
+        if "unit_price" in changes
+        else "pharmacy.medicine.updated",
+        obj=medicine,
+        changes=changes,
+    )
     return medicine
 
 
 @transaction.atomic
 def set_medicine_active(medicine, active, *, acting_user):
+    was_active = Medicine.objects.values_list("is_active", flat=True).get(pk=medicine.pk)
     medicine.is_active = active
     medicine.save(update_fields=["is_active", "updated_at"])
+    log_action(
+        actor=acting_user,
+        action=Action.STATUS_CHANGE,
+        event="pharmacy.medicine.activated" if active else "pharmacy.medicine.deactivated",
+        obj=medicine,
+        changes={"is_active": [was_active, active]},
+    )
     return medicine
 
 
@@ -108,6 +137,14 @@ def receive_stock(
             "batch is not supported; record the delivery with its own batch number."
         ) from error
     _apply_movement(batch, quantity, MovementType.RECEIVE, acting_user=acting_user)
+    log_action(
+        actor=acting_user,
+        action=Action.CREATE,
+        event="pharmacy.batch.received",
+        obj=batch,
+        changes=created_changes(batch),
+        message=f"Received {quantity} × {medicine} (batch {batch.batch_number})",
+    )
     return batch
 
 
@@ -119,9 +156,19 @@ def adjust_stock(*, batch, quantity_change, reason, acting_user, now=None):
     if not (reason or "").strip():
         raise ValidationError({"reason": ["Give a reason for the adjustment."]})
     batch = _lock_batch(batch)
-    return _apply_movement(
+    old_on_hand = batch.quantity_on_hand
+    movement = _apply_movement(
         batch, quantity_change, MovementType.ADJUSTMENT, acting_user=acting_user, reason=reason
     )
+    log_action(
+        actor=acting_user,
+        action=Action.UPDATE,
+        event="pharmacy.batch.adjusted",
+        obj=batch,
+        changes={"quantity_on_hand": [old_on_hand, batch.quantity_on_hand]},
+        message=f"Adjusted by {quantity_change:+d}: {movement.reason}",
+    )
+    return movement
 
 
 @transaction.atomic
@@ -132,13 +179,23 @@ def write_off_expired(*, batch, acting_user, now=None):
         raise ValidationError("Only expired batches can be written off.")
     if batch.quantity_on_hand == 0:
         raise ValidationError("This batch has no stock left to write off.")
-    return _apply_movement(
+    old_on_hand = batch.quantity_on_hand
+    movement = _apply_movement(
         batch,
         -batch.quantity_on_hand,
         MovementType.EXPIRY_WRITE_OFF,
         acting_user=acting_user,
         reason=f"Expired on {batch.expiry_date:%Y-%m-%d}",
     )
+    log_action(
+        actor=acting_user,
+        action=Action.UPDATE,
+        event="pharmacy.batch.written_off",
+        obj=batch,
+        changes={"quantity_on_hand": [old_on_hand, 0]},
+        message=f"Wrote off {old_on_hand} expired unit(s)",
+    )
+    return movement
 
 
 def allocate_and_issue(medicine, quantity, *, dispense_item, acting_user, today):
