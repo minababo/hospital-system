@@ -61,7 +61,7 @@
   {# Current admission banner + admissions list, from the admissions app's template tag. #}
   {% patient_admission_summary patient request.user %}
 
-  <div class="mt-8 flex flex-wrap items-center justify-between gap-3">
+  <div id="appointments" class="section-anchor mt-8 flex flex-wrap items-center justify-between gap-3">
     <h2 class="text-lg font-semibold text-slate-900">Appointments</h2>
     {% if can_book %}
       <a href="{% url 'appointments:book' %}?patient={{ patient.pk }}" class="btn btn-primary">Book appointment</a>
@@ -87,7 +87,7 @@
     {% endfor %}
   </div>
 
-  <h2 class="mt-8 text-lg font-semibold text-slate-900">Documents</h2>
+  <h2 id="documents" class="section-anchor mt-8 text-lg font-semibold text-slate-900">Documents</h2>
 
   <div class="mt-4 table-wrap">
     <table class="table">

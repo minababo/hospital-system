@@ -1,3 +1,4 @@
+from collections import defaultdict
 from datetime import timedelta
 
 from django.conf import settings
@@ -50,6 +51,51 @@ def available_slots(doctor, date, *, now=None, exclude_appointment=None):
     if date == today:
         slots = [(start, end) for start, end in slots if start > current_time]
     return slots
+
+
+def next_available_dates(doctor, *, now=None, limit=5, horizon_days=30):
+    """Up to `limit` dates (from today, within `horizon_days` and the booking window) on
+    which the doctor works and still has a free slot. A booking hint only: booking
+    re-checks the slot through available_slots().
+
+    Same rules as available_slots(), computed for the whole range at once: all
+    slot-occupying bookings come from ONE query, and the slot times (which depend only
+    on the weekday) are worked out once per working weekday.
+    """
+    today, current_time = local_now(now)
+    if not doctor.department.is_active or not doctor.is_active:
+        return []
+    last = min(today + timedelta(days=horizon_days), last_bookable_date(today))
+    working_weekdays = set(
+        doctor.schedules.filter(is_active=True).values_list("weekday", flat=True)
+    )
+    if not working_weekdays:
+        return []
+
+    booked = defaultdict(set)
+    bookings = Appointment.objects.filter(
+        doctor=doctor, date__range=(today, last), status__in=SLOT_OCCUPYING_STATUSES
+    ).values_list("date", "start_time")
+    for date, start_time in bookings:
+        booked[date].add(start_time)
+
+    starts_by_weekday = {}
+    dates = []
+    day = today
+    while day <= last and len(dates) < limit:
+        weekday = day.weekday()
+        if weekday in working_weekdays:
+            if weekday not in starts_by_weekday:
+                starts_by_weekday[weekday] = [s for s, _ in slot_ranges_for_date(doctor, day)]
+            free = [
+                start
+                for start in starts_by_weekday[weekday]
+                if start not in booked[day] and (day != today or start > current_time)
+            ]
+            if free:
+                dates.append(day)
+        day += timedelta(days=1)
+    return dates
 
 
 def visible_appointments(user):

@@ -45,6 +45,10 @@
       </form>
     </section>
 
+    {% if chosen_doctor %}
+      {% include "appointments/partials/doctor_schedule.html" %}
+    {% endif %}
+
     {% if confirm_form %}
       <section class="mt-4 max-w-3xl card card-body">
         <h2 class="font-semibold text-slate-900">3. Pick a time</h2>

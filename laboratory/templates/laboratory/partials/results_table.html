@@ -1,0 +1,47 @@
+{% comment %}
+  Results of one test (order item): Parameter | Result | Unit | Reference range | Flag.
+  Expects `item` (for the comment) and `rows` = laboratory.selectors.item_rows(item),
+  i.e. [(parameter, result or None), ...]. Used on the order page, the consultation and
+  treatment history, so results look the same everywhere.
+{% endcomment %}
+<div class="table-wrap">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Parameter</th>
+        <th class="num">Result</th>
+        <th>Unit</th>
+        <th>Reference range</th>
+        <th>Flag</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for parameter, result in rows %}
+        <tr>
+          <td>{{ parameter.name }}</td>
+          {% if result %}
+            {# Numbers line up on the right; text results (e.g. "Negative") read left to right. #}
+            <td class="{% if result.value_numeric is not None %}num {% endif %}{% if result.is_abnormal %}font-semibold text-rose-700{% else %}text-slate-900{% endif %}">{{ result.display_value }}</td>
+            <td>{{ result.unit|default:"—" }}</td>
+            <td>{{ result.reference_display }}</td>
+            <td>
+              {% if result.flag == "L" %}<span class="badge badge-warning" title="Low">L</span>
+              {% elif result.flag == "H" %}<span class="badge badge-danger" title="High">H</span>
+              {% else %}<span class="text-slate-300">—</span>{% endif %}
+            </td>
+          {% else %}
+            <td class="num text-slate-400">—</td>
+            <td>{{ parameter.unit|default:"—" }}</td>
+            <td>{{ parameter.reference_display }}</td>
+            <td><span class="text-slate-300">—</span></td>
+          {% endif %}
+        </tr>
+      {% endfor %}
+      {% if item.comment %}
+        <tr>
+          <td colspan="5" class="text-sm text-slate-500"><span class="font-medium">Comment:</span> {{ item.comment }}</td>
+        </tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
