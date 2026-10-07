@@ -28,10 +28,15 @@ PASSWORD = "Seed-Demo-Pass-2026!"
 DEMO_USERNAMES = [username for username, *_ in DEMO_USERS]
 
 
-def run(*args, password=PASSWORD, scale="0.1"):
-    """Run the command; returns (stdout, stderr)."""
+def run(*args, password=PASSWORD, scale="0.1", yes=True):
+    """Run the command; returns (stdout, stderr).
+
+    --yes by default: CI tests on PostgreSQL, where the command (rightly) refuses to seed
+    without it. The test database is disposable, so confirming is safe here."""
     out, err = StringIO(), StringIO()
     options = ["--scale", scale, *args]
+    if yes:
+        options.append("--yes")
     if password is not None:
         options = ["--password", password, *options]
     call_command("seed_demo", *options, stdout=out, stderr=err)
@@ -75,10 +80,14 @@ def test_non_sqlite_database_needs_yes(monkeypatch):
         seed, "database_engine", lambda: ("django.db.backends.postgresql", "db.example.com")
     )
     with pytest.raises(CommandError, match="db.example.com") as error:
-        run()
+        run(yes=False)
     assert "--yes" in str(error.value)
     assert PASSWORD not in str(error.value)
     assert not User.objects.exists()
+
+    out, _ = run()  # with --yes it goes ahead, and says which database it used
+    assert "Database: postgresql on db.example.com" in out
+    assert User.objects.filter(username="demo.admin").exists()
 
 
 # --- Idempotency and existing users ---------------------------------------------------------------

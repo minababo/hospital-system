@@ -29,7 +29,8 @@ MINUTE = timedelta(minutes=1)
 
 
 def seed():
-    call_command("seed_demo", "--password", PASSWORD, "--scale", "0.1", stdout=StringIO())
+    # --yes: CI runs on PostgreSQL, where the command refuses to seed without it.
+    call_command("seed_demo", "--password", PASSWORD, "--scale", "0.1", "--yes", stdout=StringIO())
 
 
 @pytest.fixture
