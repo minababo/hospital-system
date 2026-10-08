@@ -234,7 +234,7 @@ An arrow means "may import". The rules the tests check:
 | Part | Choice |
 |------|--------|
 | Language and framework | Python 3.14 (`.python-version`), Django 6.1 |
-| UI | Server-rendered Django templates; Tailwind CSS v4 browser build from the jsDelivr CDN, pinned to an exact version (4.3.3) in `templates/base.html`; Heroicons (MIT) inline |
+| UI | Server-rendered Django templates; Tailwind CSS v4 compiled ahead of time to `static/css/app.css` (pinned standalone CLI 4.3.3, see [User interface](#user-interface)) and served by WhiteNoise; Heroicons (MIT) inline |
 | Database | PostgreSQL on Supabase (session pooler, `?sslmode=require`, `CONN_HEALTH_CHECKS`); SQLite for local development |
 | File storage | Supabase Storage through its S3 API (`django-storages`); local `media/` in development |
 | Hosting | Render web service: gunicorn + WhiteNoise for static files |
@@ -271,6 +271,32 @@ An arrow means "may import". The rules the tests check:
 
 On Render (`RENDER=true`) the app refuses to start without the Supabase Storage variables,
 because Render's disk is wiped on every deploy.
+
+## User interface
+
+Pages are server-rendered Django templates styled with **Tailwind CSS v4, compiled ahead of
+time** into one static file, `static/css/app.css`, which WhiteNoise serves (with a hashed
+file name and long-term caching in production). There is no JavaScript styling step in the
+browser, so pages never appear unstyled while CSS is generated.
+
+- **Source:** `assets/css/input.css` holds the design tokens (`@theme`), the component classes
+  (`btn`, `card`, `table`, `form-input`, `badge-*`, `alert-*`, …) and the `@source` lines that
+  tell Tailwind where class names appear (all templates, plus the few Python files that deal
+  with classes). Classes that only reach a page through a template variable are safelisted
+  there with `@source inline(...)`.
+- **Build:** `bash scripts/build_css.sh` downloads the pinned standalone Tailwind CLI (4.3.3)
+  into `tools/` (gitignored) the first time, checks its SHA-256 against the official release
+  checksums, and writes the minified `static/css/app.css` (LF line endings, identical bytes on
+  Windows and Linux). No Node.js is needed.
+- **Committed output:** the built `app.css` is committed; Render's build doesn't compile CSS.
+  CI rebuilds it and fails if the committed file differs ("Verify compiled CSS is up to date").
+- **After changing classes** in any template (or in `assets/css/input.css`), run
+  `bash scripts/build_css.sh` and commit `static/css/app.css` with the change.
+- **Print pages** (invoices, receipts, lab reports, prescriptions, discharge summaries,
+  printable reports) extend `templates/print/base.html`, which has its own small inline
+  stylesheet and doesn't load `app.css`.
+- **Icons** are inline Heroicons SVGs with explicit `width`/`height`, so they keep their size
+  even if the stylesheet is slow to load.
 
 ## Local setup (Windows, Git Bash)
 
@@ -368,8 +394,6 @@ support, biometric authentication.
   admission (only from a consultation or as a walk-in), no interim bills during a long stay.
 - **Doctor leave doesn't block booking:** approving a doctor's leave warns about their booked
   appointments, but doesn't block new bookings or cancel existing ones.
-- **Tailwind from a CDN:** pages need the CDN and compile styles in the browser; a build step
-  would remove both.
 - **Audit immutability is enforced by the application,** not yet by a database trigger.
 - **Hosting:** one free-tier Render instance (cold starts, no high availability); backups are
   manual (see [Backups](#backups)). Document files are not included in database backups.

@@ -125,6 +125,9 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
+# Files WhiteNoise serves at the site root rather than under /static/. Browsers ask for
+# /favicon.ico directly (also on pages that don't link it, like print views and 500).
+WHITENOISE_ROOT = BASE_DIR / "public"
 
 # Uploaded files. MEDIA_URL is not served by any URL pattern: documents are only
 # downloaded through views that check the user's role.

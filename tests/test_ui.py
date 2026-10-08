@@ -312,9 +312,16 @@ def test_rendered_print_page_has_no_tailwind_or_sidebar(client_for_role, make_in
     assert 'id="sidebar"' not in html
 
 
-def test_tailwind_cdn_is_pinned_to_an_exact_version():
-    base = (ROOT / "templates/base.html").read_text(encoding="utf-8")
-    urls = re.findall(r'src="(https://cdn\.jsdelivr\.net/npm/@tailwindcss/browser@[^"]+)"', base)
-    assert len(urls) == 1
-    assert re.fullmatch(r".*@tailwindcss/browser@4\.\d+\.\d+", urls[0])
-    assert "@4/" not in base and 'browser@4"' not in base
+def test_pages_use_the_compiled_stylesheet_not_the_tailwind_cdn(client_for_role):
+    """The browser build generated CSS at runtime (pages could flash unstyled); the
+    stylesheet is now compiled by scripts/build_css.sh and served as a static file."""
+    for path in ROOT.rglob("*.html"):
+        if ".venv" in path.parts or "templates" not in path.parts:
+            continue
+        text = path.read_text(encoding="utf-8")
+        assert "tailwindcss/browser" not in text, path
+        assert 'type="text/tailwindcss"' not in text, path
+
+    html = page(client_for_role(Role.ADMIN), reverse("dashboard"))
+    assert "tailwindcss/browser" not in html and 'type="text/tailwindcss"' not in html
+    assert '<link rel="stylesheet" href="/static/css/app.css">' in html
