@@ -60,5 +60,21 @@ jobs:
       - name: Django deployment checks
         run: python manage.py check --deploy --fail-level WARNING
 
+      # The stylesheet is compiled and committed (Render doesn't build it). Rebuild it here
+      # with the pinned Tailwind CLI and fail if the committed file is out of date.
+      - name: Cache the Tailwind CLI
+        uses: actions/cache@v6
+        with:
+          path: tools
+          key: tailwindcss-${{ runner.os }}-${{ hashFiles('scripts/build_css.sh') }}
+
+      - name: Verify compiled CSS is up to date
+        run: |
+          bash scripts/build_css.sh
+          if ! git diff --exit-code -- static/css/app.css; then
+            echo "::error file=static/css/app.css::static/css/app.css is out of date. Run scripts/build_css.sh and commit static/css/app.css."
+            exit 1
+          fi
+
       - name: Run tests
         run: python -m pytest
