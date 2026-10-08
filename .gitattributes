@@ -2,3 +2,6 @@
 *.pdf binary
 *.png binary
 *.jpg binary
+*.ico binary
+# Compiled by scripts/build_css.sh; LF on every platform so CI's diff check is exact.
+static/css/app.css text eol=lf

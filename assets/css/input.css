@@ -1,0 +1,151 @@
+/* Tailwind input for static/css/app.css. Build with: bash scripts/build_css.sh
+   (pinned standalone Tailwind CLI; the output is committed and CI checks it is current).
+   After changing classes in templates (or in the Python files listed below), rebuild and
+   commit static/css/app.css. */
+
+/* source(none): no automatic scanning. Every place class names appear is listed here. */
+@import "tailwindcss" source(none);
+
+/* Templates: the project-wide ones and every app's own. */
+@source "../../templates/**/*.html";
+@source "../../accounts/templates/**/*.html";
+@source "../../admissions/templates/**/*.html";
+@source "../../appointments/templates/**/*.html";
+@source "../../audit/templates/**/*.html";
+@source "../../billing/templates/**/*.html";
+@source "../../doctors/templates/**/*.html";
+@source "../../laboratory/templates/**/*.html";
+@source "../../patients/templates/**/*.html";
+@source "../../pharmacy/templates/**/*.html";
+@source "../../records/templates/**/*.html";
+@source "../../reports/templates/**/*.html";
+@source "../../staff/templates/**/*.html";
+
+/* Python that handles class names: the form-field filter adds component classes
+   (form-input, form-select, ...) and the navigation holds sidebar metadata. */
+@source "../../accounts/templatetags/ui.py";
+@source "../../accounts/navigation.py";
+
+/* Safelist: classes that reach the page through template variables, so a scanner can't
+   be sure to see them. Kept in step with their only sources:
+   - icon sizes passed as class="size-N" to partials/icon.html (default size-5);
+   - the charge form grid passed as grid_class to billing/partials/charge_form.html;
+   - classes the mobile drawer script in layouts/app.html adds and removes. */
+@source inline("size-4 size-5 size-6 size-8 shrink-0");
+@source inline("grid gap-3 sm:grid-cols-2 sm:grid-cols-4");
+@source inline("-translate-x-full hidden overflow-hidden");
+
+/* Design system (moved unchanged from templates/base.html): tokens (@theme) and the
+   reusable component classes (@layer components) that pages use instead of long
+   utility strings. Print pages don't load this stylesheet. */
+@theme {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  --color-primary-50: var(--color-teal-50);
+  --color-primary-100: var(--color-teal-100);
+  --color-primary-600: var(--color-teal-600);
+  --color-primary-700: var(--color-teal-700);
+  --color-primary-800: var(--color-teal-800);
+}
+
+@layer base {
+  body { @apply bg-slate-50 font-sans text-[0.9375rem] text-slate-800 antialiased; }
+  /* A visible focus ring for keyboard users on every interactive element. */
+  :focus-visible { @apply outline-2 outline-offset-2 outline-primary-600; }
+  /* Fields without a class (e.g. widgets rendered by Django directly) still look right. */
+  input:where([type="text"], [type="email"], [type="password"], [type="search"], [type="date"],
+    [type="datetime-local"], [type="time"], [type="number"], [type="tel"], [type="url"]),
+  select, textarea {
+    @apply w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 shadow-xs
+      focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20 focus:outline-none
+      disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500;
+  }
+  input[type="checkbox"], input[type="radio"] { @apply size-4 accent-primary-600; }
+}
+
+@layer components {
+  /* Buttons */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-md border border-transparent px-4 py-2
+      text-sm font-medium whitespace-nowrap transition-colors
+      disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary { @apply bg-primary-700 text-white hover:bg-primary-800; }
+  .btn-secondary { @apply border-slate-300 bg-white text-slate-700 shadow-xs hover:bg-slate-50; }
+  .btn-danger { @apply bg-rose-700 text-white hover:bg-rose-800; }
+  .btn-ghost { @apply text-slate-600 hover:bg-slate-100 hover:text-slate-900; }
+  .btn-sm { @apply px-3 py-1.5 text-sm; }
+
+  /* Cards */
+  .card { @apply rounded-lg border border-slate-200 bg-white shadow-sm; }
+  .card-header { @apply flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-5 py-3; }
+  .card-body { @apply p-5; }
+  .card-footer { @apply border-t border-slate-200 bg-slate-50 px-5 py-3; }
+
+  /* Tables. .table-wrap scrolls sideways on small screens; the shadows at its edges
+     (pure CSS, see below) hint that there is more to scroll to. */
+  .table-wrap { @apply overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm; }
+  .table { @apply min-w-full text-sm; }
+  .table thead { @apply bg-slate-50; }
+  .table th { @apply px-4 py-3 text-left text-xs font-semibold tracking-wide whitespace-nowrap text-slate-500 uppercase; }
+  .table td { @apply border-t border-slate-100 px-4 py-3 align-top; }
+  .table tbody tr { @apply hover:bg-slate-50/70; }
+  .table .num, .num { @apply text-right tabular-nums; }
+
+  /* Forms */
+  .form-label { @apply mb-1 block text-sm font-medium text-slate-700; }
+  .form-input, .form-select, .form-textarea {
+    @apply w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 shadow-xs
+      focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20 focus:outline-none
+      disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500;
+  }
+  .form-textarea { @apply min-h-24; }
+  .form-checkbox { @apply size-4 rounded border-slate-300 accent-primary-600; }
+  .form-file {
+    @apply block w-full text-sm text-slate-600
+      file:mr-3 file:cursor-pointer file:rounded-md file:border file:border-slate-300 file:bg-white
+      file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-slate-700 file:shadow-xs
+      hover:file:bg-slate-50;
+  }
+  .form-help { @apply mt-1 text-xs text-slate-500; }
+  .form-error { @apply mt-1 text-xs font-medium text-rose-700; }
+
+  /* Badges */
+  .badge { @apply inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap ring-1 ring-inset; }
+  .badge-neutral { @apply bg-slate-100 text-slate-700 ring-slate-200; }
+  .badge-success { @apply bg-emerald-50 text-emerald-700 ring-emerald-200; }
+  .badge-warning { @apply bg-amber-50 text-amber-800 ring-amber-200; }
+  .badge-danger { @apply bg-rose-50 text-rose-700 ring-rose-200; }
+  .badge-info { @apply bg-sky-50 text-sky-700 ring-sky-200; }
+
+  /* Alerts */
+  .alert { @apply block rounded-md border px-4 py-3 text-sm; }
+  .alert-info { @apply border-sky-200 bg-sky-50 text-sky-900; }
+  .alert-success { @apply border-emerald-200 bg-emerald-50 text-emerald-900; }
+  .alert-warning { @apply border-amber-200 bg-amber-50 text-amber-900; }
+  .alert-danger { @apply border-rose-200 bg-rose-50 text-rose-900; }
+
+  /* Page header (rendered by layouts/app.html from the page_* blocks) */
+  .page-title { @apply text-2xl font-semibold tracking-tight text-slate-900; }
+  .page-subtitle { @apply mt-1 text-sm text-slate-500; }
+
+  /* A section that links can jump to (#diagnoses, ...): keep its heading clear of
+     the sticky top bar. */
+  .section-anchor { @apply scroll-mt-20; }
+}
+
+/* Pages written before the shared header started their content with a top margin;
+   the header already leaves that space. (Unlayered, so it wins over utilities.) */
+.page-content > :first-child { margin-top: 0; }
+
+/* Scroll-edge shadows: two white covers scroll with the content and hide the grey
+   shadows underneath when the table is at that edge. */
+.table-wrap {
+  background:
+    linear-gradient(to right, white 30%, rgb(255 255 255 / 0)) left / 40px 100%,
+    linear-gradient(to left, white 30%, rgb(255 255 255 / 0)) right / 40px 100%,
+    radial-gradient(farthest-side at 0 50%, rgb(15 23 42 / 0.14), transparent) left / 12px 100%,
+    radial-gradient(farthest-side at 100% 50%, rgb(15 23 42 / 0.14), transparent) right / 12px 100%;
+  background-color: white;
+  background-repeat: no-repeat;
+  background-attachment: local, local, scroll, scroll;
+}
